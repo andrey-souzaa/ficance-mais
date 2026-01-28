@@ -71,10 +71,9 @@ export default function TransactionsPage() {
 
   const getTypeStyles = (type: "income" | "expense" | "transfer") => {
     switch (type) {
-      case "income": return { icon: ArrowUpCircle, color: "text-emerald-500", bg: "bg-emerald-500/10" };
-      case "expense": return { icon: ArrowDownCircle, color: "text-red-500", bg: "bg-red-500/10" };
-      // MUDANÇA: Transferência agora é AZUL (#2940bb)
-      case "transfer": return { icon: ArrowRightCircle, color: "text-[#2940bb]", bg: "bg-[#2940bb]/10" };
+      case "income": return { icon: ArrowUpCircle, color: "text-emerald-600 dark:text-emerald-500", bg: "bg-emerald-100 dark:bg-emerald-500/10" };
+      case "expense": return { icon: ArrowDownCircle, color: "text-red-600 dark:text-red-500", bg: "bg-red-100 dark:bg-red-500/10" };
+      case "transfer": return { icon: ArrowRightCircle, color: "text-[#2940bb]", bg: "bg-blue-100 dark:bg-[#2940bb]/10" };
     }
   };
 
@@ -83,38 +82,38 @@ export default function TransactionsPage() {
   const handleSaveEdit = (e: React.FormEvent) => { e.preventDefault(); if (editingItem) { editTransaction(editingItem.id, editingItem); setIsEditOpen(false); setEditingItem(null); } };
 
   return (
-    <div className="space-y-6 w-full text-zinc-100 max-w-[1600px] p-6 min-h-screen">
+    // CORREÇÃO: Cores dinâmicas para o container principal
+    <div className="space-y-6 w-full text-zinc-900 dark:text-zinc-100 max-w-[1600px] p-6 min-h-screen">
       
       {/* TOPO */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Transações</h1>
-          <p className="text-zinc-500 text-sm mt-1">Gerencie suas receitas e despesas (Contas Bancárias)</p>
+          <h1 className="text-2xl font-bold text-zinc-900 dark:text-white tracking-tight">Transações</h1>
+          <p className="text-zinc-500 dark:text-zinc-400 text-sm mt-1">Gerencie suas receitas e despesas (Contas Bancárias)</p>
         </div>
         
         <div className="flex flex-wrap items-center gap-2">
             <Link href="/configuracoes">
-                <Button variant="outline" size="icon" className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 text-zinc-400 hover:text-white">
+                <Button variant="outline" size="icon" className="border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/50 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white">
                     <Settings className="h-4 w-4" />
                 </Button>
             </Link>
 
             <NewTransactionDialog defaultType="income">
-                <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium gap-2 border border-emerald-500/20 shadow-lg shadow-emerald-900/20">
+                <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium gap-2 shadow-sm">
                     <Plus className="h-4 w-4" /> Receita
                 </Button>
             </NewTransactionDialog>
 
             <NewTransactionDialog defaultType="expense">
-                <Button className="bg-red-600 hover:bg-red-700 text-white font-medium gap-2 border border-red-500/20 shadow-lg shadow-red-900/20">
+                <Button className="bg-red-600 hover:bg-red-700 text-white font-medium gap-2 shadow-sm">
                     <Minus className="h-4 w-4" /> Despesa
                 </Button>
             </NewTransactionDialog>
 
              <div className="relative">
                  <TransferDialog customTrigger={
-                    // MUDANÇA: Botão Transferir Azul
-                    <Button variant="outline" className="border-[#2940bb]/50 bg-[#2940bb]/10 text-[#2940bb] hover:bg-[#2940bb]/20 hover:text-[#2940bb] gap-2 font-medium">
+                    <Button variant="outline" className="border-[#2940bb]/30 bg-[#2940bb]/10 text-[#2940bb] hover:bg-[#2940bb]/20 hover:text-[#2940bb] gap-2 font-medium">
                         <ArrowRightLeft className="h-4 w-4" /> Transferir
                     </Button>
                  }/>
@@ -124,28 +123,36 @@ export default function TransactionsPage() {
 
       {/* ABAS */}
       <div className="flex items-center gap-2">
-         {/* MUDANÇA: Botões de filtro agora ficam AZUIS quando ativos */}
          <Button 
             onClick={() => setViewMode("todas")}
-            className={`h-8 rounded-lg text-xs font-medium px-4 transition-all ${viewMode === 'todas' ? 'bg-[#2940bb] text-white hover:bg-[#2940bb]/90 shadow-md' : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800 border border-zinc-800'}`}
+            className={`h-8 rounded-lg text-xs font-medium px-4 transition-all ${
+                viewMode === 'todas' 
+                ? 'bg-[#2940bb] text-white hover:bg-[#2940bb]/90 shadow-md' 
+                : 'bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white border border-zinc-200 dark:border-zinc-800'
+            }`}
          >
             Todas
          </Button>
          <Button 
             onClick={() => setViewMode("mes")}
-            className={`h-8 rounded-lg text-xs font-medium px-4 transition-all ${viewMode === 'mes' ? 'bg-[#2940bb] text-white hover:bg-[#2940bb]/90 shadow-md' : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800 border border-zinc-800'}`}
+            className={`h-8 rounded-lg text-xs font-medium px-4 transition-all ${
+                viewMode === 'mes' 
+                ? 'bg-[#2940bb] text-white hover:bg-[#2940bb]/90 shadow-md' 
+                : 'bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white border border-zinc-200 dark:border-zinc-800'
+            }`}
          >
             Por Mês
          </Button>
       </div>
 
       {/* FILTROS */}
-      <div className="bg-zinc-900/40 border border-zinc-800 p-1.5 rounded-xl flex flex-col md:flex-row gap-2">
+      {/* CORREÇÃO: Fundo e bordas adaptáveis */}
+      <div className="bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 p-1.5 rounded-xl flex flex-col md:flex-row gap-2 shadow-sm">
         <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
             <Input 
                 placeholder="Buscar transações..." 
-                className="pl-9 h-10 bg-black border-zinc-800 focus:ring-0 focus:border-zinc-700 text-zinc-200 rounded-lg placeholder:text-zinc-600"
+                className="pl-9 h-10 bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 focus:ring-0 focus:border-[#2940bb] text-zinc-900 dark:text-zinc-200 rounded-lg placeholder:text-zinc-500"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -153,13 +160,13 @@ export default function TransactionsPage() {
 
         <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-hide">
             <Select value={typeFilter} onValueChange={(val: any) => setTypeFilter(val)}>
-                <SelectTrigger className="w-[110px] h-10 bg-black border-zinc-800 text-zinc-300 rounded-lg text-xs focus:ring-0">
+                <SelectTrigger className="w-[110px] h-10 bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg text-xs focus:ring-0">
                     <div className="flex items-center gap-2">
                         <Filter className="h-3.5 w-3.5 text-zinc-500" />
                         <SelectValue placeholder="Todos" />
                     </div>
                 </SelectTrigger>
-                <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
+                <SelectContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white">
                     <SelectItem value="all">Todos</SelectItem>
                     <SelectItem value="income">Receitas</SelectItem>
                     <SelectItem value="expense">Despesas</SelectItem>
@@ -168,13 +175,13 @@ export default function TransactionsPage() {
             </Select>
 
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                <SelectTrigger className="w-[140px] h-10 bg-black border-zinc-800 text-zinc-300 rounded-lg text-xs focus:ring-0">
+                <SelectTrigger className="w-[140px] h-10 bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg text-xs focus:ring-0">
                     <div className="flex items-center gap-2">
                          <ListFilter className="h-3.5 w-3.5 text-zinc-500" />
                          <SelectValue placeholder="Categorias" />
                     </div>
                 </SelectTrigger>
-                <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
+                <SelectContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white">
                     <SelectItem value="all">Todas categorias</SelectItem>
                     {categories.map(cat => (
                         <SelectItem key={cat} value={cat}>{cat}</SelectItem>
@@ -182,15 +189,16 @@ export default function TransactionsPage() {
                 </SelectContent>
             </Select>
 
-            <Button variant="outline" className="h-10 bg-black border-zinc-800 text-zinc-300 rounded-lg text-xs font-normal gap-2 hover:bg-zinc-900 hover:text-white shrink-0">
+            <Button variant="outline" className="h-10 bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg text-xs font-normal gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:text-zinc-900 dark:hover:text-white shrink-0">
                 <CalendarIcon className="h-3.5 w-3.5 text-zinc-500" />
                 Período
             </Button>
         </div>
       </div>
 
-      {/* CONTEÚDO */}
-      <div className="bg-zinc-900/20 border border-zinc-800 rounded-xl min-h-[400px]">
+      {/* CONTEÚDO (TABELA) */}
+      {/* CORREÇÃO: Fundo branco e bordas claras */}
+      <div className="bg-white dark:bg-zinc-900/20 border border-zinc-200 dark:border-zinc-800 rounded-xl min-h-[400px] shadow-sm overflow-hidden">
           
           {/* MOBILE */}
           <div className="flex flex-col md:hidden">
@@ -201,13 +209,13 @@ export default function TransactionsPage() {
                 const style = getTypeStyles(t.type);
                 const Icon = style.icon;
                 return (
-                    <div key={t.id} className="border-b border-zinc-800/50 p-4 flex items-center justify-between active:bg-zinc-900/50 transition-colors last:border-0">
+                    <div key={t.id} className="border-b border-zinc-100 dark:border-zinc-800/50 p-4 flex items-center justify-between active:bg-zinc-50 dark:active:bg-zinc-900/50 transition-colors last:border-0">
                         <div className="flex items-center gap-3">
                         <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${style.bg}`}>
                             <Icon className={`h-5 w-5 ${style.color}`} />
                         </div>
                         <div className="flex flex-col">
-                            <p className="font-medium text-white text-sm line-clamp-1">{t.description}</p>
+                            <p className="font-medium text-zinc-900 dark:text-white text-sm line-clamp-1">{t.description}</p>
                             <div className="flex items-center gap-2 text-xs text-zinc-500 mt-0.5">
                                 <span>{formatDate(t.date)}</span>
                                 <span>•</span>
@@ -221,15 +229,15 @@ export default function TransactionsPage() {
                             </span>
                              <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-6 w-6 -mr-2 text-zinc-500">
+                                    <Button variant="ghost" size="icon" className="h-6 w-6 -mr-2 text-zinc-400 hover:text-zinc-900 dark:hover:text-white">
                                         <MoreHorizontal className="h-4 w-4" />
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800 text-white">
-                                    <DropdownMenuItem onClick={() => handleEditClick(t)} className="gap-2 cursor-pointer text-xs hover:bg-zinc-800">
+                                <DropdownMenuContent align="end" className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white">
+                                    <DropdownMenuItem onClick={() => handleEditClick(t)} className="gap-2 cursor-pointer text-xs">
                                         <Pencil className="h-3.5 w-3.5" /> Editar
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleDelete(t.id)} className="gap-2 text-red-500 cursor-pointer text-xs hover:bg-zinc-800">
+                                    <DropdownMenuItem onClick={() => handleDelete(t.id)} className="gap-2 text-red-600 dark:text-red-500 cursor-pointer text-xs">
                                         <Trash2 className="h-3.5 w-3.5" /> Excluir
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
@@ -244,8 +252,8 @@ export default function TransactionsPage() {
           {/* DESKTOP */}
           <div className="hidden md:block">
             <Table>
-                <TableHeader className="bg-zinc-900/50">
-                    <TableRow className="border-zinc-800 hover:bg-transparent">
+                <TableHeader className="bg-zinc-50 dark:bg-zinc-900/50">
+                    <TableRow className="border-zinc-200 dark:border-zinc-800 hover:bg-transparent">
                         <TableHead className="text-zinc-500 font-medium h-12 w-[140px]">Data</TableHead>
                         <TableHead className="text-zinc-500 font-medium h-12">Descrição</TableHead>
                         <TableHead className="text-zinc-500 font-medium h-12">Categoria</TableHead>
@@ -265,15 +273,15 @@ export default function TransactionsPage() {
                         sortedTransactions.map((t) => {
                             const style = getTypeStyles(t.type);
                             return (
-                                <TableRow key={t.id} className="border-zinc-800/50 hover:bg-zinc-900/30 group transition-colors">
-                                    <TableCell className="text-zinc-400 font-medium text-xs">
+                                <TableRow key={t.id} className="border-zinc-100 dark:border-zinc-800/50 hover:bg-zinc-50 dark:hover:bg-zinc-900/30 group transition-colors">
+                                    <TableCell className="text-zinc-500 dark:text-zinc-400 font-medium text-xs">
                                         {formatDate(t.date)}
                                     </TableCell>
-                                    <TableCell className="text-white font-medium text-sm">
+                                    <TableCell className="text-zinc-900 dark:text-white font-medium text-sm">
                                         {t.description}
                                     </TableCell>
                                     <TableCell>
-                                        <Badge variant="outline" className="bg-zinc-900/50 text-zinc-400 border-zinc-800 font-normal hover:bg-zinc-900">
+                                        <Badge variant="outline" className="bg-zinc-100 dark:bg-zinc-900/50 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 font-normal">
                                             {t.category}
                                         </Badge>
                                     </TableCell>
@@ -291,15 +299,15 @@ export default function TransactionsPage() {
                                     <TableCell>
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 text-zinc-500 hover:text-white">
+                                                <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 text-zinc-400 hover:text-zinc-900 dark:hover:text-white">
                                                     <MoreHorizontal className="h-4 w-4" />
                                                 </Button>
                                             </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800 text-white shadow-xl">
-                                                <DropdownMenuItem onClick={() => handleEditClick(t)} className="gap-2 cursor-pointer hover:bg-zinc-800 text-xs">
+                                            <DropdownMenuContent align="end" className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white shadow-xl">
+                                                <DropdownMenuItem onClick={() => handleEditClick(t)} className="gap-2 cursor-pointer text-xs">
                                                     <Pencil className="h-3.5 w-3.5" /> Editar
                                                 </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => handleDelete(t.id)} className="gap-2 text-red-500 cursor-pointer hover:bg-zinc-800 text-xs">
+                                                <DropdownMenuItem onClick={() => handleDelete(t.id)} className="gap-2 text-red-600 dark:text-red-500 cursor-pointer text-xs">
                                                     <Trash2 className="h-3.5 w-3.5" /> Excluir
                                                 </DropdownMenuItem>
                                             </DropdownMenuContent>
@@ -316,7 +324,7 @@ export default function TransactionsPage() {
 
       {/* --- MODAL DE EDIÇÃO --- */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="bg-zinc-950 border-zinc-800 text-white sm:max-w-[425px]">
+        <DialogContent className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Editar Transação</DialogTitle>
           </DialogHeader>
@@ -329,7 +337,7 @@ export default function TransactionsPage() {
                   id="desc" 
                   value={editingItem.description} 
                   onChange={(e) => setEditingItem({...editingItem, description: e.target.value})}
-                  className="bg-zinc-900 border-zinc-800 focus-visible:ring-[#2940bb]" 
+                  className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus-visible:ring-[#2940bb]" 
                 />
               </div>
 
@@ -341,7 +349,7 @@ export default function TransactionsPage() {
                     type="number"
                     value={editingItem.amount} 
                     onChange={(e) => setEditingItem({...editingItem, amount: Number(e.target.value)})}
-                    className="bg-zinc-900 border-zinc-800 focus-visible:ring-[#2940bb]" 
+                    className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus-visible:ring-[#2940bb]" 
                     />
                 </div>
                 <div className="grid gap-2">
@@ -351,7 +359,7 @@ export default function TransactionsPage() {
                     type="date"
                     value={editingItem.date.split('T')[0]} 
                     onChange={(e) => setEditingItem({...editingItem, date: e.target.value})}
-                    className="bg-zinc-900 border-zinc-800 focus-visible:ring-[#2940bb]" 
+                    className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus-visible:ring-[#2940bb]" 
                     />
                 </div>
               </div>
@@ -362,7 +370,7 @@ export default function TransactionsPage() {
                       <Input 
                         value={editingItem.category} 
                         onChange={(e) => setEditingItem({...editingItem, category: e.target.value})}
-                        className="bg-zinc-900 border-zinc-800 focus-visible:ring-[#2940bb]" 
+                        className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus-visible:ring-[#2940bb]" 
                     />
                  </div>
                  <div className="grid gap-2">
@@ -371,10 +379,10 @@ export default function TransactionsPage() {
                         value={editingItem.status} 
                         onValueChange={(val: "paid" | "pending") => setEditingItem({...editingItem, status: val})}
                     >
-                        <SelectTrigger className="bg-zinc-900 border-zinc-800">
+                        <SelectTrigger className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
                             <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="bg-zinc-900 border-zinc-800 text-white">
+                        <SelectContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white">
                             <SelectItem value="paid">Pago / Recebido</SelectItem>
                             <SelectItem value="pending">Pendente</SelectItem>
                         </SelectContent>
@@ -383,10 +391,9 @@ export default function TransactionsPage() {
               </div>
 
               <DialogFooter className="mt-4">
-                 <Button type="button" variant="ghost" onClick={() => setIsEditOpen(false)} className="hover:bg-zinc-900 hover:text-white text-zinc-400">
+                 <Button type="button" variant="ghost" onClick={() => setIsEditOpen(false)} className="hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-500">
                     Cancelar
                  </Button>
-                 {/* MUDANÇA: Botão de salvar agora é AZUL */}
                  <Button type="submit" className="bg-[#2940bb] hover:bg-[#2940bb]/90 text-white">
                     <Check className="w-4 h-4 mr-2" /> Salvar Alterações
                  </Button>
@@ -403,10 +410,10 @@ export default function TransactionsPage() {
 function EmptyState() {
     return (
         <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="bg-zinc-900/50 p-4 rounded-full mb-3">
-                <Search className="h-6 w-6 text-zinc-600" />
+            <div className="bg-zinc-100 dark:bg-zinc-900/50 p-4 rounded-full mb-3">
+                <Search className="h-6 w-6 text-zinc-400 dark:text-zinc-600" />
             </div>
-            <p className="text-zinc-300 font-medium">Nenhuma transação encontrada</p>
+            <p className="text-zinc-600 dark:text-zinc-300 font-medium">Nenhuma transação encontrada</p>
             <p className="text-zinc-500 text-sm mt-1 max-w-[250px]">
                 Tente ajustar os filtros ou adicione uma nova transação para começar.
             </p>

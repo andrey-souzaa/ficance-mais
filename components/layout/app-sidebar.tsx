@@ -33,7 +33,7 @@ export function AppSidebar() {
          </div>
       </div>
 
-      {/* Ações Rápidas (Opcional - mantive pois já existia) */}
+      {/* Ações Rápidas */}
       <div className="px-6 mb-6">
           <Button variant="outline" className="w-full justify-start gap-2 border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white">
               <Bell className="h-4 w-4" /> Notificações
@@ -41,7 +41,6 @@ export function AppSidebar() {
       </div>
 
       {/* MENU PRINCIPAL */}
-      {/* Aumentei o espaçamento vertical (space-y-2) e o padding lateral (px-4) */}
       <nav className="flex-1 px-4 space-y-2 overflow-y-auto">
         <div className="space-y-1">
             <p className="px-4 text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">Principal</p>
@@ -59,7 +58,7 @@ export function AppSidebar() {
         </div>
       </nav>
 
-      {/* FOOTER / CONFIGURAÇÕES */}
+      {/* FOOTER - LINK NORMAL PARA PÁGINA */}
       <div className="p-4 mt-auto border-t border-zinc-100 dark:border-zinc-900">
         <NavItem href="/configuracoes" icon={Settings} label="Configurações" isActive={pathname === "/configuracoes"} />
       </div>
@@ -73,13 +72,9 @@ function NavItem({ href, icon: Icon, label, isActive }: { href: string; icon: an
             <div className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group text-sm font-medium",
                 isActive
-                  // MUDANÇA VISUAL:
-                  // Antes: Fundo Azul Sólido + Texto Branco
-                  // Agora (Inspirado na imagem): Fundo Azul BEM Claro + Texto Azul Forte
                   ? "bg-blue-50 dark:bg-[#2940bb]/10 text-[#2940bb] font-semibold"
                   : "text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-900"
             )}>
-                {/* O ícone segue a cor do texto */}
                 <Icon className={cn("h-5 w-5 transition-colors", isActive ? "text-[#2940bb]" : "text-zinc-400 group-hover:text-zinc-600 dark:group-hover:text-zinc-300")} />
                 <span>{label}</span>
             </div>

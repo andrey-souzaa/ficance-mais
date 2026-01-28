@@ -9,6 +9,11 @@ import {
   Sun, Moon
 } from "lucide-react";
 
+// DND Kit Imports (Essenciais para arrastar)
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy, useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Widget } from "@/components/dashboard/widget"; 
@@ -25,8 +30,25 @@ import { BalanceChartWidget, ChartFilterType } from "@/components/dashboard/bala
 import { CustomDateDialog } from "@/components/dashboard/custom-date-dialog";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from "@dnd-kit/core";
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy } from "@dnd-kit/sortable";
+// Componente para tornar o Widget arrastável
+function SortableItem({ id, children, className }: { id: string, children: React.ReactNode, className?: string }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : "auto",
+    position: "relative" as const,
+    opacity: isDragging ? 0.8 : 1,
+    height: "100%", // Garante altura correta ao arrastar
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className={className}>
+      {children}
+    </div>
+  );
+}
 
 export default function Home() {
   const { 
@@ -40,14 +62,69 @@ export default function Home() {
   const [isCustomDateOpen, setIsCustomDateOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
-  useEffect(() => setIsMounted(true), []);
+  // Ordem Padrão (Caso não tenha nada salvo)
+  const defaultOrder = [
+    "minhas-contas", 
+    "meus-cartoes", 
+    "gastos-mes", 
+    "balanco-periodo", 
+    "limite-gastos"
+  ];
 
-  const [items, setItems] = useState(["minhas-contas", "meus-cartoes", "balanco-periodo", "gastos-mes", "limite-gastos"]);
+  const [items, setItems] = useState(defaultOrder);
   const [hiddenWidgets, setHiddenWidgets] = useState<string[]>([]);
 
-  const handleLayoutUpdate = (newOrder: string[], newHidden: string[]) => { setItems(newOrder); setHiddenWidgets(newHidden); };
+  // 1. CARREGAR DO LOCALSTORAGE (Apenas uma vez ao iniciar)
+  useEffect(() => {
+    setIsMounted(true);
+    const savedOrder = localStorage.getItem("finance_v2_order"); // Nova chave
+    const savedHidden = localStorage.getItem("finance_v2_hidden");
+
+    if (savedOrder) {
+        try { 
+            const parsed = JSON.parse(savedOrder);
+            if (Array.isArray(parsed) && parsed.length > 0) setItems(parsed);
+        } catch (e) { console.error("Erro ao carregar ordem:", e); }
+    }
+    
+    if (savedHidden) {
+        try { setHiddenWidgets(JSON.parse(savedHidden)); } catch (e) { console.error("Erro ao carregar ocultos:", e); }
+    }
+  }, []);
+
+  // 2. SALVAMENTO AUTOMÁTICO (Sempre que 'items' ou 'hiddenWidgets' mudar)
+  useEffect(() => {
+    if (isMounted) {
+        localStorage.setItem("finance_v2_order", JSON.stringify(items));
+        localStorage.setItem("finance_v2_hidden", JSON.stringify(hiddenWidgets));
+    }
+  }, [items, hiddenWidgets, isMounted]);
+
+  // Função de Drag and Drop
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setItems((currentItems) => {
+        const oldIndex = currentItems.indexOf(active.id as string);
+        const newIndex = currentItems.indexOf(over.id as string);
+        return arrayMove(currentItems, oldIndex, newIndex);
+      });
+    }
+  }
+
+  // Função chamada pelo Dialog de Personalizar
+  const handleLayoutUpdate = (newOrder: string[], newHidden: string[]) => { 
+      // Atualiza o estado, o useEffect acima cuidará de salvar
+      setItems(newOrder); 
+      setHiddenWidgets(newHidden); 
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }), // Evita arrastar ao clicar
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
   const handleFilterChange = (val: DateFilterType) => val === "custom" ? setIsCustomDateOpen(true) : setDateFilter(val);
-  
   const formatMoney = (val: number) => !isVisible ? "••••" : new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
 
   // --- CÁLCULOS ---
@@ -61,21 +138,7 @@ export default function Home() {
   const pendingExpense30d = transactions.filter(t => t.type === 'expense' && t.status === 'pending' && !t.cardId && isAfter(new Date(t.date), today) && isBefore(new Date(t.date), next30Days)).reduce((acc, t) => acc + Number(t.amount), 0);
   const forecastBalance = totalAccountBalance + pendingIncome30d - pendingExpense30d;
 
-  const recentTransactions = filteredTransactions
-    .filter(t => !t.cardId)
-    .slice(0, 5);
-
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
-  function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    if (over && active.id !== over.id) {
-      setItems((items) => {
-        const oldIndex = items.indexOf(active.id as string);
-        const newIndex = items.indexOf(over.id as string);
-        return arrayMove(items, oldIndex, newIndex);
-      });
-    }
-  }
+  const recentTransactions = filteredTransactions.filter(t => !t.cardId).slice(0, 5);
 
   const renderWidget = (id: string) => {
     switch (id) {
@@ -98,17 +161,15 @@ export default function Home() {
   };
 
   const visibleItems = items.filter(id => !hiddenWidgets.includes(id));
-  if (!isMounted) return null;
+  if (!isMounted) return null; // Evita erro de hidratação
 
   return (
-    // AJUSTE DE PADDING AQUI: pt-10 md:pt-12 (Mais espaço no topo)
     <main className="space-y-8 w-full text-zinc-900 dark:text-zinc-100 bg-zinc-50 dark:bg-black min-h-screen px-4 pb-20 pt-10 md:px-8 md:pt-12 transition-colors duration-300">
       
       {/* HEADER PRINCIPAL */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end py-2 border-b border-zinc-200 dark:border-zinc-800 gap-4 w-full">
         <div className="flex flex-wrap justify-start items-start gap-8 w-full md:w-auto">
-            
-            {/* 1. SALDO TOTAL */}
+            {/* SALDO */}
             <div className="flex flex-col items-start gap-1 text-left min-w-[140px]">
                 <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
                     <Landmark className="h-3.5 w-3.5 text-zinc-500" /> Saldo em Contas
@@ -117,10 +178,9 @@ export default function Home() {
                     {formatMoney(totalAccountBalance)}
                 </span>
             </div>
-
             <div className="hidden md:block w-px h-10 bg-zinc-200 dark:bg-zinc-800 mt-1"></div>
-
-            {/* 2. FATURAMENTO */}
+            
+            {/* FATURAMENTO */}
             <div className="flex flex-col items-start gap-1 text-left min-w-[140px]">
                 <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
                     <TrendingUp className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-500" /> Faturamento
@@ -130,7 +190,7 @@ export default function Home() {
                 </span>
             </div>
 
-            {/* 3. DESPESAS */}
+            {/* DESPESAS */}
             <div className="flex flex-col items-start gap-1 text-left min-w-[140px]">
                 <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
                     <TrendingDown className="h-3.5 w-3.5 text-red-600 dark:text-red-500" /> Despesas
@@ -139,10 +199,9 @@ export default function Home() {
                     {formatMoney(expense)}
                 </span>
             </div>
-
              <div className="hidden md:block w-px h-10 bg-zinc-200 dark:bg-zinc-800 mt-1"></div>
-
-             {/* 4. PREVISÃO 30 DIAS */}
+             
+             {/* PREVISÃO */}
              <div className="flex flex-col items-start gap-1 text-left min-w-[140px]">
                 <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
                     <Calendar className="h-3.5 w-3.5 text-[#2940bb]" /> Previsão (30d)
@@ -167,7 +226,6 @@ export default function Home() {
                         <SelectItem value="custom" className="text-[#2940bb] font-medium">Personalizado...</SelectItem>
                     </SelectContent>
                 </Select>
-                
                 <CustomDateDialog open={isCustomDateOpen} onOpenChange={setIsCustomDateOpen} />
                 
                 <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-800 mx-1"></div>
@@ -185,7 +243,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* 2. ATALHOS RÁPIDOS */}
+      {/* ATALHOS RÁPIDOS */}
       <div className="flex justify-start items-center gap-3 overflow-x-auto pb-1 scrollbar-hide w-full">
         <NewTransactionDialog defaultType="income">
             <Button className="h-9 bg-white dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-900 dark:text-white border border-zinc-200 dark:border-zinc-800 rounded-lg px-5 gap-2 transition-all group shrink-0 text-sm shadow-sm">
@@ -204,14 +262,14 @@ export default function Home() {
 
       <MiddleWidgets />
 
-      {/* 4. GRID DE WIDGETS */}
+      {/* GRID DE WIDGETS COM SORTABLE */}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={visibleItems} strategy={rectSortingStrategy}>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-[minmax(240px,auto)] pb-10">
             {visibleItems.map((id) => (
-                <div key={id} className={`min-h-[240px] ${id === "balanco-periodo" ? "md:col-span-2" : "col-span-1"}`}>
+                <SortableItem key={id} id={id} className={`min-h-[240px] ${id === "balanco-periodo" ? "md:col-span-2" : "col-span-1"}`}>
                     {renderWidget(id)}
-                </div>
+                </SortableItem>
             ))}
             
             <div className="col-span-1 md:col-span-2 lg:col-span-3">

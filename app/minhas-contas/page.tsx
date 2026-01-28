@@ -20,9 +20,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
-// Gradients for cards - kept distinct for visual variety
+// Gradientes para os cartões (Mantidos pois são identidade visual do cartão)
 const CARD_GRADIENTS = [
-  "from-[#2940bb] to-blue-800", // Main Blue
+  "from-[#2940bb] to-blue-800",
   "from-purple-600 to-indigo-700",
   "from-emerald-600 to-teal-800",
   "from-slate-700 to-slate-900", 
@@ -32,11 +32,11 @@ const CARD_GRADIENTS = [
 export default function MyAccountsPage() {
   const { accounts, cards, addAccount, addCard, removeAccount, removeCard, isVisible } = useFinance();
   
-  // Modal States
+  // Estados dos Modais
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [isCardOpen, setIsCardOpen] = useState(false);
 
-  // Form States
+  // Estados dos Formulários
   const [newAccount, setNewAccount] = useState({ name: "", balance: "" });
   const [newCard, setNewCard] = useState({ name: "", limit: "", closingDate: "", dueDate: "" });
 
@@ -69,14 +69,14 @@ export default function MyAccountsPage() {
   };
 
   return (
-    <div className="space-y-10 w-full text-zinc-100 max-w-[1200px] mx-auto p-6 pb-20">
+    // CORREÇÃO: Cores de texto dinâmicas para o container principal
+    <div className="space-y-10 w-full text-zinc-900 dark:text-zinc-100 max-w-[1200px] mx-auto p-6 pb-20">
       
-      {/* --- SECTION 1: BANK ACCOUNTS --- */}
+      {/* --- SEÇÃO 1: CONTAS BANCÁRIAS --- */}
       <section>
         <div className="flex items-center justify-between mb-6">
             <div>
-                <h2 className="text-xl font-bold flex items-center gap-2 text-white">
-                    {/* Updated: Blue Icon */}
+                <h2 className="text-xl font-bold flex items-center gap-2 text-zinc-900 dark:text-white">
                     <Landmark className="h-5 w-5 text-[#2940bb]" />
                     Contas Bancárias
                 </h2>
@@ -85,12 +85,11 @@ export default function MyAccountsPage() {
             
             <Dialog open={isAccountOpen} onOpenChange={setIsAccountOpen}>
                 <DialogTrigger asChild>
-                    {/* Updated: Blue Button */}
                     <Button className="bg-[#2940bb] hover:bg-[#2940bb]/90 text-white gap-2 font-medium">
                         <Plus className="h-4 w-4" /> Nova Conta
                     </Button>
                 </DialogTrigger>
-                <DialogContent className="bg-zinc-950 border-zinc-800 text-white">
+                <DialogContent className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white">
                     <DialogHeader>
                         <DialogTitle>Adicionar Conta Bancária</DialogTitle>
                     </DialogHeader>
@@ -99,7 +98,7 @@ export default function MyAccountsPage() {
                             <Label>Nome da Conta</Label>
                             <Input 
                                 placeholder="Ex: Nubank, Inter..." 
-                                className="bg-zinc-900 border-zinc-800 focus:ring-[#2940bb]/20 focus:border-[#2940bb]"
+                                className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus:ring-[#2940bb]/20 focus:border-[#2940bb]"
                                 value={newAccount.name}
                                 onChange={e => setNewAccount({...newAccount, name: e.target.value})}
                             />
@@ -109,14 +108,13 @@ export default function MyAccountsPage() {
                             <Input 
                                 type="number" 
                                 placeholder="R$ 0,00" 
-                                className="bg-zinc-900 border-zinc-800 focus:ring-[#2940bb]/20 focus:border-[#2940bb]"
+                                className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus:ring-[#2940bb]/20 focus:border-[#2940bb]"
                                 value={newAccount.balance}
                                 onChange={e => setNewAccount({...newAccount, balance: e.target.value})}
                             />
                         </div>
                     </div>
                     <DialogFooter>
-                        {/* Updated: Blue Button */}
                         <Button onClick={handleAddAccount} className="bg-[#2940bb] text-white hover:bg-[#2940bb]/90 w-full">Criar Conta</Button>
                     </DialogFooter>
                 </DialogContent>
@@ -125,19 +123,19 @@ export default function MyAccountsPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {accounts.map((acc) => (
-                <div key={acc.id} className="bg-zinc-900/30 border border-zinc-800 p-5 rounded-2xl flex items-center justify-between group hover:border-[#2940bb]/30 transition-all">
+                // CORREÇÃO: Cards brancos no light / escuros no dark
+                <div key={acc.id} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5 rounded-2xl flex items-center justify-between group hover:border-[#2940bb]/30 transition-all shadow-sm">
                     <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-full bg-zinc-950 border border-zinc-800 flex items-center justify-center">
-                             {/* Dynamic Icon Logic */}
-                             {acc.name.toLowerCase().includes('nu') ? <span className="font-bold text-purple-500">Nu</span> : 
-                              acc.name.toLowerCase().includes('inter') ? <span className="font-bold text-orange-500">In</span> : 
+                        <div className="h-12 w-12 rounded-full bg-zinc-100 dark:bg-black border border-zinc-200 dark:border-zinc-800 flex items-center justify-center">
+                             {/* Ícone dinâmico */}
+                             {acc.name.toLowerCase().includes('nu') ? <span className="font-bold text-purple-600 dark:text-purple-500">Nu</span> : 
+                              acc.name.toLowerCase().includes('inter') ? <span className="font-bold text-orange-600 dark:text-orange-500">In</span> : 
                               <Building2 className="h-6 w-6 text-zinc-400" />}
                         </div>
                         <div>
-                            <p className="font-semibold text-white">{acc.name}</p>
+                            <p className="font-semibold text-zinc-900 dark:text-white">{acc.name}</p>
                             <p className="text-sm text-zinc-500">Saldo atual</p>
-                            {/* Updated: Positive Green / Negative Red - Standard finance colors */}
-                            <p className={`text-lg font-bold mt-0.5 ${acc.balance >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                            <p className={`text-lg font-bold mt-0.5 ${acc.balance >= 0 ? 'text-emerald-600 dark:text-emerald-500' : 'text-red-600 dark:text-red-500'}`}>
                                 {formatMoney(acc.balance)}
                             </p>
                         </div>
@@ -145,11 +143,11 @@ export default function MyAccountsPage() {
                     
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="text-zinc-500 hover:text-white">
+                            <Button variant="ghost" size="icon" className="text-zinc-400 hover:text-zinc-900 dark:hover:text-white">
                                 <MoreVertical className="h-4 w-4" />
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800 text-white">
+                        <DropdownMenuContent align="end" className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
                             <DropdownMenuItem className="gap-2 cursor-pointer text-xs"><Pencil className="h-3.5 w-3.5" /> Editar</DropdownMenuItem>
                             <DropdownMenuItem onClick={() => removeAccount(acc.id)} className="gap-2 text-red-500 cursor-pointer text-xs"><Trash2 className="h-3.5 w-3.5" /> Excluir</DropdownMenuItem>
                         </DropdownMenuContent>
@@ -157,11 +155,11 @@ export default function MyAccountsPage() {
                 </div>
             ))}
             
-            {/* Empty State Accounts */}
+            {/* Estado Vazio de Contas */}
             {accounts.length === 0 && (
                 <div 
                     onClick={() => setIsAccountOpen(true)}
-                    className="border border-dashed border-zinc-800 p-5 rounded-2xl flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-zinc-900/50 hover:border-[#2940bb]/50 transition-all min-h-[120px] text-zinc-500 hover:text-[#2940bb]"
+                    className="border border-dashed border-zinc-300 dark:border-zinc-800 p-5 rounded-2xl flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900/50 hover:border-[#2940bb]/50 transition-all min-h-[120px] text-zinc-500 hover:text-[#2940bb]"
                 >
                     <Plus className="h-6 w-6" />
                     <span className="text-sm font-medium">Adicionar primeira conta</span>
@@ -170,14 +168,13 @@ export default function MyAccountsPage() {
         </div>
       </section>
 
-      <div className="h-px bg-zinc-800 w-full"></div>
+      <div className="h-px bg-zinc-200 dark:bg-zinc-800 w-full"></div>
 
-      {/* --- SECTION 2: CREDIT CARDS --- */}
+      {/* --- SEÇÃO 2: CARTÕES DE CRÉDITO --- */}
       <section>
         <div className="flex items-center justify-between mb-6">
             <div>
-                <h2 className="text-xl font-bold flex items-center gap-2 text-white">
-                    {/* Updated: Blue Icon to match theme */}
+                <h2 className="text-xl font-bold flex items-center gap-2 text-zinc-900 dark:text-white">
                     <CreditCard className="h-5 w-5 text-[#2940bb]" />
                     Meus Cartões
                 </h2>
@@ -186,37 +183,35 @@ export default function MyAccountsPage() {
             
             <Dialog open={isCardOpen} onOpenChange={setIsCardOpen}>
                 <DialogTrigger asChild>
-                    {/* Updated: Blue Button */}
                     <Button className="bg-[#2940bb] hover:bg-[#2940bb]/90 text-white gap-2 font-medium">
-                        <Plus className="h-4 w-4" /> Novo Cartão
+                        <Plus className="h-4 w-4" /> Nova Cartão
                     </Button>
                 </DialogTrigger>
-                <DialogContent className="bg-zinc-950 border-zinc-800 text-white">
+                <DialogContent className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white">
                     <DialogHeader>
                         <DialogTitle>Adicionar Cartão</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                         <div className="space-y-2">
                             <Label>Apelido do Cartão</Label>
-                            <Input placeholder="Ex: Nubank Violeta" className="bg-zinc-900 border-zinc-800 focus:ring-[#2940bb]/20 focus:border-[#2940bb]" value={newCard.name} onChange={e => setNewCard({...newCard, name: e.target.value})} />
+                            <Input placeholder="Ex: Nubank Violeta" className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus:ring-[#2940bb]/20 focus:border-[#2940bb]" value={newCard.name} onChange={e => setNewCard({...newCard, name: e.target.value})} />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label>Dia Fechamento</Label>
-                                <Input type="number" placeholder="Dia" className="bg-zinc-900 border-zinc-800 focus:ring-[#2940bb]/20 focus:border-[#2940bb]" value={newCard.closingDate} onChange={e => setNewCard({...newCard, closingDate: e.target.value})} />
+                                <Input type="number" placeholder="Dia" className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus:ring-[#2940bb]/20 focus:border-[#2940bb]" value={newCard.closingDate} onChange={e => setNewCard({...newCard, closingDate: e.target.value})} />
                             </div>
                             <div className="space-y-2">
                                 <Label>Dia Vencimento</Label>
-                                <Input type="number" placeholder="Dia" className="bg-zinc-900 border-zinc-800 focus:ring-[#2940bb]/20 focus:border-[#2940bb]" value={newCard.dueDate} onChange={e => setNewCard({...newCard, dueDate: e.target.value})} />
+                                <Input type="number" placeholder="Dia" className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus:ring-[#2940bb]/20 focus:border-[#2940bb]" value={newCard.dueDate} onChange={e => setNewCard({...newCard, dueDate: e.target.value})} />
                             </div>
                         </div>
                         <div className="space-y-2">
                             <Label>Limite Total</Label>
-                            <Input type="number" placeholder="R$ 0,00" className="bg-zinc-900 border-zinc-800 focus:ring-[#2940bb]/20 focus:border-[#2940bb]" value={newCard.limit} onChange={e => setNewCard({...newCard, limit: e.target.value})} />
+                            <Input type="number" placeholder="R$ 0,00" className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus:ring-[#2940bb]/20 focus:border-[#2940bb]" value={newCard.limit} onChange={e => setNewCard({...newCard, limit: e.target.value})} />
                         </div>
                     </div>
                     <DialogFooter>
-                        {/* Updated: Blue Button */}
                         <Button onClick={handleAddCard} className="bg-[#2940bb] text-white hover:bg-[#2940bb]/90 w-full">Salvar Cartão</Button>
                     </DialogFooter>
                 </DialogContent>
@@ -227,6 +222,7 @@ export default function MyAccountsPage() {
             {cards.map((card, index) => {
                 const gradient = CARD_GRADIENTS[index % CARD_GRADIENTS.length];
                 return (
+                    // Cartões mantém o gradiente pois é a "identidade" do cartão, mas ajustei sombras
                     <div key={card.id} className={`relative h-48 rounded-2xl p-6 flex flex-col justify-between shadow-lg overflow-hidden group bg-gradient-to-br ${gradient}`}>
                         <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors"></div>
                         <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/10 blur-2xl"></div>
@@ -243,7 +239,7 @@ export default function MyAccountsPage() {
                                         <MoreHorizontal className="h-5 w-5" />
                                     </Button>
                                 </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800 text-white">
+                                <DropdownMenuContent align="end" className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
                                     <DropdownMenuItem onClick={() => removeCard(card.id)} className="text-red-500 cursor-pointer gap-2 text-xs">
                                         <Trash2 className="h-3.5 w-3.5" /> Remover Cartão
                                     </DropdownMenuItem>
@@ -253,7 +249,6 @@ export default function MyAccountsPage() {
 
                         <div className="relative z-10">
                             <div className="flex gap-4 mb-1">
-                                {/* Updated: Chip style neutral white/glass instead of yellow */}
                                 <div className="h-8 w-10 bg-white/20 rounded border border-white/30 flex items-center justify-center">
                                     <div className="h-4 w-6 border-2 border-white/40 rounded-sm"></div>
                                 </div>
@@ -278,11 +273,11 @@ export default function MyAccountsPage() {
                     </div>
                 )
             })}
-             {/* Empty State Cards */}
+             {/* Estado Vazio de Cartões */}
              {cards.length === 0 && (
                 <div 
                     onClick={() => setIsCardOpen(true)}
-                    className="border border-dashed border-zinc-800 h-48 rounded-2xl flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-zinc-900/50 hover:border-[#2940bb]/50 transition-all text-zinc-500 hover:text-[#2940bb]"
+                    className="border border-dashed border-zinc-300 dark:border-zinc-800 h-48 rounded-2xl flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900/50 hover:border-[#2940bb]/50 transition-all text-zinc-500 hover:text-[#2940bb]"
                 >
                     <CreditCard className="h-8 w-8 opacity-50" />
                     <span className="text-sm font-medium">Adicionar novo cartão</span>
