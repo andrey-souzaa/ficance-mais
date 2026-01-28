@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useFinance, Goal } from "@/lib/finance-context";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { 
   Target, 
   Plus, 
@@ -25,10 +24,10 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { format } from "date-fns";
 
 export default function GoalsPage() {
-  // Garantimos que goals e accounts tenham valor padrão com || []
   const { goals, addGoal, removeGoal, addValueToGoal, accounts, isVisible } = useFinance();
   
-  const safeGoals = goals || []; // <--- CORREÇÃO DO ERRO REDUCE (Blindagem)
+  // CORREÇÃO DO ERRO REDUCE (Blindagem)
+  const safeGoals = goals || []; 
   
   const [isNewGoalOpen, setIsNewGoalOpen] = useState(false);
   const [isAddValueOpen, setIsAddValueOpen] = useState(false);
@@ -73,7 +72,6 @@ export default function GoalsPage() {
       setSelectedGoal(null);
   };
 
-  // Cálculos usando safeGoals para não quebrar
   const totalSaved = safeGoals.reduce((acc, g) => acc + g.currentAmount, 0);
   const totalTarget = safeGoals.reduce((acc, g) => acc + g.targetAmount, 0);
   const globalProgress = totalTarget > 0 ? (totalSaved / totalTarget) * 100 : 0;
@@ -96,14 +94,16 @@ export default function GoalsPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
             <h1 className="text-3xl font-bold flex items-center gap-3 text-zinc-900 dark:text-white">
-                <Target className="h-8 w-8 text-yellow-500" /> Minhas Metas
+                {/* ÍCONE AZUL */}
+                <Target className="h-8 w-8 text-[#2940bb]" /> Minhas Metas
             </h1>
             <p className="text-zinc-500 dark:text-zinc-400 text-sm mt-1">Acompanhe o progresso dos seus sonhos.</p>
         </div>
         
         <Dialog open={isNewGoalOpen} onOpenChange={setIsNewGoalOpen}>
             <DialogTrigger asChild>
-                <Button className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold">
+                {/* BOTÃO AZUL */}
+                <Button className="bg-[#2940bb] hover:bg-[#2940bb]/90 text-white font-bold">
                     <Plus className="h-4 w-4 mr-2" /> Nova Meta
                 </Button>
             </DialogTrigger>
@@ -143,7 +143,8 @@ export default function GoalsPage() {
                     </div>
                 </div>
                 <DialogFooter>
-                    <Button onClick={handleCreateGoal} className="bg-yellow-500 hover:bg-yellow-600 text-black w-full">Criar Meta</Button>
+                    {/* BOTÃO AZUL */}
+                    <Button onClick={handleCreateGoal} className="bg-[#2940bb] hover:bg-[#2940bb]/90 text-white w-full">Criar Meta</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -151,7 +152,8 @@ export default function GoalsPage() {
 
       {/* PAINEL GLOBAL */}
       <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 md:p-8 relative overflow-hidden shadow-sm">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-yellow-400 to-orange-500"></div>
+          {/* GRADIENTE AZUL */}
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#2940bb] to-blue-500"></div>
           
           <div className="flex flex-col md:flex-row gap-8 justify-between items-end">
              <div>
@@ -165,10 +167,12 @@ export default function GoalsPage() {
              <div className="w-full md:w-1/2">
                  <div className="flex justify-between text-xs mb-2">
                      <span className="text-zinc-900 dark:text-white font-medium">Progresso Global</span>
-                     <span className="text-yellow-600 dark:text-yellow-500 font-bold">{Math.round(globalProgress)}% Concluído</span>
+                     {/* TEXTO AZUL */}
+                     <span className="text-[#2940bb] font-bold">{Math.round(globalProgress)}% Concluído</span>
                  </div>
                  <div className="h-3 w-full bg-zinc-100 dark:bg-zinc-900 rounded-full overflow-hidden">
-                     <div className="h-full bg-gradient-to-r from-yellow-400 to-orange-500 transition-all duration-1000" style={{ width: `${globalProgress}%` }}></div>
+                     {/* BARRA DE PROGRESSO AZUL */}
+                     <div className="h-full bg-gradient-to-r from-[#2940bb] to-blue-500 transition-all duration-1000" style={{ width: `${globalProgress}%` }}></div>
                  </div>
                  <p className="text-right text-[10px] text-zinc-500 mt-1">
                      Faltam <span className="text-zinc-700 dark:text-zinc-300 font-medium">{formatMoney(totalTarget - totalSaved)}</span> para atingir todas as metas.
@@ -187,7 +191,8 @@ export default function GoalsPage() {
                   <div key={goal.id} className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-6 flex flex-col justify-between hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors group shadow-sm">
                       <div>
                           <div className="flex justify-between items-start mb-4">
-                              <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${isCompleted ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-500' : 'bg-yellow-100 text-yellow-600 dark:bg-zinc-900 dark:text-yellow-500 border dark:border-zinc-800'}`}>
+                              {/* ÍCONE DE FUNDO (AZUL ou VERDE se completo) */}
+                              <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${isCompleted ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-500' : 'bg-blue-100 text-[#2940bb] dark:bg-[#2940bb]/10 dark:text-[#2940bb] border dark:border-zinc-800'}`}>
                                   {getIcon(goal.icon)}
                               </div>
                               
@@ -217,7 +222,8 @@ export default function GoalsPage() {
                                   {isCompleted && <span className="text-xs bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-500 px-2 py-0.5 rounded font-bold">100%</span>}
                               </div>
                               <div className="h-2 w-full bg-zinc-100 dark:bg-zinc-900 rounded-full overflow-hidden">
-                                  <div className={`h-full rounded-full transition-all duration-700 ${isCompleted ? 'bg-emerald-500' : 'bg-yellow-500'}`} style={{ width: `${progress}%` }}></div>
+                                  {/* BARRA INDIVIDUAL AZUL */}
+                                  <div className={`h-full rounded-full transition-all duration-700 ${isCompleted ? 'bg-emerald-500' : 'bg-[#2940bb]'}`} style={{ width: `${progress}%` }}></div>
                               </div>
                               <div className="flex justify-between text-[10px] text-zinc-500 uppercase font-bold tracking-wider">
                                   <span>Atual</span>
@@ -288,7 +294,8 @@ export default function GoalsPage() {
                   </div>
               </div>
               <DialogFooter>
-                  <Button onClick={handleAddValue} className="bg-yellow-500 hover:bg-yellow-600 text-black w-full">Confirmar Aporte</Button>
+                  {/* BOTÃO AZUL */}
+                  <Button onClick={handleAddValue} className="bg-[#2940bb] hover:bg-[#2940bb]/90 text-white w-full">Confirmar Aporte</Button>
               </DialogFooter>
           </DialogContent>
       </Dialog>

@@ -2,7 +2,7 @@
 
 import { useFinance } from "@/lib/finance-context";
 import { Card, CardContent } from "@/components/ui/card";
-import { Calendar, TrendingUp, AlertCircle, Wallet } from "lucide-react";
+import { Calendar, TrendingUp, Wallet } from "lucide-react";
 import { addDays, isAfter, isBefore, startOfDay, endOfDay, isSameDay } from "date-fns";
 
 export function MiddleWidgets() {
@@ -45,32 +45,31 @@ export function MiddleWidgets() {
   const isPositive = forecast >= 0;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    // AJUSTE: gap-6 para melhor separação visual
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
-        {/* WIDGET 1: CONTAS PRÓXIMAS (COMPACTO) */}
-        <Card className="bg-zinc-950 border-zinc-800 relative overflow-hidden group hover:border-zinc-700 transition-colors">
-            {/* Detalhe colorido lateral mais fino */}
-            <div className="absolute top-0 left-0 w-0.5 h-full bg-orange-500"></div>
+        {/* WIDGET 1: A VENCER */}
+        {/* AJUSTE: h-full para forçar altura igual */}
+        <Card className="h-full bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 relative overflow-hidden group hover:border-orange-500/30 transition-all shadow-sm">
+            <div className="absolute top-0 left-0 w-1 h-full bg-orange-500"></div>
             
-            <CardContent className="p-5 flex items-center justify-between">
+            <CardContent className="p-6 flex items-center justify-between h-full">
                 <div className="flex items-center gap-4">
-                    {/* Ícone menor e mais discreto */}
-                    <div className="h-10 w-10 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-500 shrink-0">
-                        <Calendar className="h-5 w-5" />
+                    <div className="h-12 w-12 rounded-full bg-orange-100 dark:bg-orange-500/10 flex items-center justify-center text-orange-600 dark:text-orange-500 shrink-0">
+                        <Calendar className="h-6 w-6" />
                     </div>
                     
                     <div>
-                        <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-0.5">A Vencer (7 dias)</p>
+                        <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1">A Vencer (7 dias)</p>
                         <div className="flex items-baseline gap-2">
-                             <span className="text-xl font-bold text-white">
+                             <span className="text-2xl font-bold text-zinc-900 dark:text-white">
                                 {upcomingCount === 0 ? "Em dia" : formatMoney(upcomingTotal)}
                              </span>
                         </div>
                     </div>
                 </div>
 
-                {/* Badge de quantidade */}
-                <div className={`px-3 py-1 rounded-full text-xs font-bold border ${upcomingCount > 0 ? 'bg-orange-500/10 text-orange-500 border-orange-500/20' : 'bg-zinc-900 text-zinc-500 border-zinc-800'}`}>
+                <div className={`px-3 py-1.5 rounded-full text-xs font-bold border ${upcomingCount > 0 ? 'bg-orange-100 dark:bg-orange-500/10 text-orange-600 dark:text-orange-500 border-orange-200 dark:border-orange-500/20' : 'bg-zinc-100 dark:bg-zinc-900 text-zinc-500 border-zinc-200 dark:border-zinc-800'}`}>
                     {upcomingCount === 0 ? (
                         <span className="flex items-center gap-1">0 <span className="hidden sm:inline">contas</span></span>
                     ) : (
@@ -80,28 +79,29 @@ export function MiddleWidgets() {
             </CardContent>
         </Card>
 
-        {/* WIDGET 2: PREVISÃO 30 DIAS (COMPACTO) */}
-        <Card className="bg-zinc-950 border-zinc-800 relative overflow-hidden hover:border-zinc-700 transition-colors">
-            <div className={`absolute top-0 left-0 w-0.5 h-full ${isPositive ? 'bg-purple-500' : 'bg-red-500'}`}></div>
+        {/* WIDGET 2: PREVISÃO */}
+        {/* AJUSTE: h-full para forçar altura igual */}
+        <Card className="h-full bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 relative overflow-hidden hover:border-[#2940bb]/30 transition-all shadow-sm">
+            <div className={`absolute top-0 left-0 w-1 h-full ${isPositive ? 'bg-[#2940bb]' : 'bg-red-500'}`}></div>
             
-            <CardContent className="p-5 flex items-center justify-between">
+            <CardContent className="p-6 flex items-center justify-between h-full">
                 <div className="flex items-center gap-4">
-                    <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${isPositive ? 'bg-purple-500/10 text-purple-500' : 'bg-red-500/10 text-red-500'}`}>
-                        <TrendingUp className="h-5 w-5" />
+                    <div className={`h-12 w-12 rounded-full flex items-center justify-center shrink-0 ${isPositive ? 'bg-blue-100 dark:bg-blue-500/10 text-[#2940bb] dark:text-blue-500' : 'bg-red-100 dark:bg-red-500/10 text-red-600 dark:text-red-500'}`}>
+                        <TrendingUp className="h-6 w-6" />
                     </div>
                     
                     <div>
-                        <p className="text-xs font-medium text-zinc-500 uppercase tracking-wider mb-0.5">Previsão (30d)</p>
+                        <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1">Previsão (30d)</p>
                         <div className="flex items-baseline gap-2">
-                             <span className={`text-xl font-bold ${isPositive ? 'text-white' : 'text-red-400'}`}>
+                             <span className={`text-2xl font-bold ${isPositive ? 'text-zinc-900 dark:text-white' : 'text-red-600 dark:text-red-400'}`}>
                                 {formatMoney(forecast)}
                              </span>
                         </div>
                     </div>
                 </div>
 
-                <div className="px-3 py-1 rounded-full text-xs font-bold bg-zinc-900 text-zinc-500 border border-zinc-800 flex items-center gap-1">
-                    <Wallet className="h-3 w-3" />
+                <div className="px-3 py-1.5 rounded-full text-xs font-bold bg-zinc-100 dark:bg-zinc-900 text-zinc-500 border border-zinc-200 dark:border-zinc-800 flex items-center gap-1">
+                    <Wallet className="h-3.5 w-3.5" />
                     <span className="hidden sm:inline">Estimado</span>
                 </div>
             </CardContent>

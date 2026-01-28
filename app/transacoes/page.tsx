@@ -22,7 +22,6 @@ import {
   Check
 } from "lucide-react";
 
-// UI Components
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -38,24 +37,18 @@ import Link from "next/link";
 export default function TransactionsPage() {
   const { transactions, deleteTransaction, editTransaction } = useFinance();
   
-  // Filtros
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<"all" | "income" | "expense" | "transfer">("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [viewMode, setViewMode] = useState<"todas" | "mes">("todas");
 
-  // Edição
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Transaction | null>(null);
 
-  // Categorias
   const categories = Array.from(new Set(transactions.map(t => t.category))).sort();
 
-  // --- FILTRAGEM ---
   const filtered = transactions
-    // 1. A REGRA DE OURO: Remove transações de cartão desta lista
     .filter(t => !t.cardId) 
-    
     .filter(t => {
       const matchesSearch = t.description.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesType = typeFilter === "all" || t.type === typeFilter;
@@ -64,7 +57,6 @@ export default function TransactionsPage() {
       return matchesSearch && matchesType && matchesCategory && matchesView;
   });
 
-  // Ordenação
   const sortedTransactions = filtered.sort((a, b) => 
     new Date(b.date).getTime() - new Date(a.date).getTime()
   );
@@ -74,41 +66,21 @@ export default function TransactionsPage() {
   };
 
   const formatDate = (dateStr: string) => {
-    try {
-        return format(parseISO(dateStr), "dd/MM/yyyy", { locale: ptBR });
-    } catch (e) {
-        return dateStr;
-    }
+    try { return format(parseISO(dateStr), "dd/MM/yyyy", { locale: ptBR }); } catch (e) { return dateStr; }
   };
 
   const getTypeStyles = (type: "income" | "expense" | "transfer") => {
     switch (type) {
-      case "income": return { icon: ArrowUpCircle, color: "text-green-500", bg: "bg-green-500/10" };
+      case "income": return { icon: ArrowUpCircle, color: "text-emerald-500", bg: "bg-emerald-500/10" };
       case "expense": return { icon: ArrowDownCircle, color: "text-red-500", bg: "bg-red-500/10" };
-      case "transfer": return { icon: ArrowRightCircle, color: "text-blue-500", bg: "bg-blue-500/10" };
+      // MUDANÇA: Transferência agora é AZUL (#2940bb)
+      case "transfer": return { icon: ArrowRightCircle, color: "text-[#2940bb]", bg: "bg-[#2940bb]/10" };
     }
   };
 
-  // Ações
-  const handleDelete = (id: string) => {
-    if (confirm("Tem certeza que deseja excluir esta transação?")) {
-        deleteTransaction(id);
-    }
-  };
-
-  const handleEditClick = (transaction: Transaction) => {
-    setEditingItem(transaction);
-    setIsEditOpen(true);
-  };
-
-  const handleSaveEdit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (editingItem) {
-        editTransaction(editingItem.id, editingItem);
-        setIsEditOpen(false);
-        setEditingItem(null);
-    }
-  };
+  const handleDelete = (id: string) => { if (confirm("Tem certeza que deseja excluir esta transação?")) deleteTransaction(id); };
+  const handleEditClick = (transaction: Transaction) => { setEditingItem(transaction); setIsEditOpen(true); };
+  const handleSaveEdit = (e: React.FormEvent) => { e.preventDefault(); if (editingItem) { editTransaction(editingItem.id, editingItem); setIsEditOpen(false); setEditingItem(null); } };
 
   return (
     <div className="space-y-6 w-full text-zinc-100 max-w-[1600px] p-6 min-h-screen">
@@ -122,13 +94,13 @@ export default function TransactionsPage() {
         
         <div className="flex flex-wrap items-center gap-2">
             <Link href="/configuracoes">
-                <Button variant="outline" size="icon" className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 text-zinc-400">
+                <Button variant="outline" size="icon" className="border-zinc-800 bg-zinc-900/50 hover:bg-zinc-800 text-zinc-400 hover:text-white">
                     <Settings className="h-4 w-4" />
                 </Button>
             </Link>
 
             <NewTransactionDialog defaultType="income">
-                <Button className="bg-green-600 hover:bg-green-700 text-white font-medium gap-2 border border-green-500/20 shadow-lg shadow-green-900/20">
+                <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium gap-2 border border-emerald-500/20 shadow-lg shadow-emerald-900/20">
                     <Plus className="h-4 w-4" /> Receita
                 </Button>
             </NewTransactionDialog>
@@ -141,7 +113,8 @@ export default function TransactionsPage() {
 
              <div className="relative">
                  <TransferDialog customTrigger={
-                    <Button variant="outline" className="border-blue-900/50 bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 hover:text-blue-400 gap-2 font-medium">
+                    // MUDANÇA: Botão Transferir Azul
+                    <Button variant="outline" className="border-[#2940bb]/50 bg-[#2940bb]/10 text-[#2940bb] hover:bg-[#2940bb]/20 hover:text-[#2940bb] gap-2 font-medium">
                         <ArrowRightLeft className="h-4 w-4" /> Transferir
                     </Button>
                  }/>
@@ -151,15 +124,16 @@ export default function TransactionsPage() {
 
       {/* ABAS */}
       <div className="flex items-center gap-2">
+         {/* MUDANÇA: Botões de filtro agora ficam AZUIS quando ativos */}
          <Button 
             onClick={() => setViewMode("todas")}
-            className={`h-8 rounded-lg text-xs font-medium px-4 transition-all ${viewMode === 'todas' ? 'bg-green-600 text-white hover:bg-green-700 shadow-md shadow-green-900/20' : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800 border border-zinc-800'}`}
+            className={`h-8 rounded-lg text-xs font-medium px-4 transition-all ${viewMode === 'todas' ? 'bg-[#2940bb] text-white hover:bg-[#2940bb]/90 shadow-md' : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800 border border-zinc-800'}`}
          >
             Todas
          </Button>
          <Button 
             onClick={() => setViewMode("mes")}
-            className={`h-8 rounded-lg text-xs font-medium px-4 transition-all ${viewMode === 'mes' ? 'bg-green-600 text-white hover:bg-green-700 shadow-md shadow-green-900/20' : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800 border border-zinc-800'}`}
+            className={`h-8 rounded-lg text-xs font-medium px-4 transition-all ${viewMode === 'mes' ? 'bg-[#2940bb] text-white hover:bg-[#2940bb]/90 shadow-md' : 'bg-zinc-900 text-zinc-400 hover:text-white hover:bg-zinc-800 border border-zinc-800'}`}
          >
             Por Mês
          </Button>
@@ -252,10 +226,10 @@ export default function TransactionsPage() {
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="bg-zinc-900 border-zinc-800 text-white">
-                                    <DropdownMenuItem onClick={() => handleEditClick(t)} className="gap-2 cursor-pointer text-xs">
+                                    <DropdownMenuItem onClick={() => handleEditClick(t)} className="gap-2 cursor-pointer text-xs hover:bg-zinc-800">
                                         <Pencil className="h-3.5 w-3.5" /> Editar
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleDelete(t.id)} className="gap-2 text-red-500 cursor-pointer text-xs">
+                                    <DropdownMenuItem onClick={() => handleDelete(t.id)} className="gap-2 text-red-500 cursor-pointer text-xs hover:bg-zinc-800">
                                         <Trash2 className="h-3.5 w-3.5" /> Excluir
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
@@ -355,7 +329,7 @@ export default function TransactionsPage() {
                   id="desc" 
                   value={editingItem.description} 
                   onChange={(e) => setEditingItem({...editingItem, description: e.target.value})}
-                  className="bg-zinc-900 border-zinc-800 focus-visible:ring-emerald-500" 
+                  className="bg-zinc-900 border-zinc-800 focus-visible:ring-[#2940bb]" 
                 />
               </div>
 
@@ -367,7 +341,7 @@ export default function TransactionsPage() {
                     type="number"
                     value={editingItem.amount} 
                     onChange={(e) => setEditingItem({...editingItem, amount: Number(e.target.value)})}
-                    className="bg-zinc-900 border-zinc-800 focus-visible:ring-emerald-500" 
+                    className="bg-zinc-900 border-zinc-800 focus-visible:ring-[#2940bb]" 
                     />
                 </div>
                 <div className="grid gap-2">
@@ -377,7 +351,7 @@ export default function TransactionsPage() {
                     type="date"
                     value={editingItem.date.split('T')[0]} 
                     onChange={(e) => setEditingItem({...editingItem, date: e.target.value})}
-                    className="bg-zinc-900 border-zinc-800 focus-visible:ring-emerald-500" 
+                    className="bg-zinc-900 border-zinc-800 focus-visible:ring-[#2940bb]" 
                     />
                 </div>
               </div>
@@ -388,7 +362,7 @@ export default function TransactionsPage() {
                       <Input 
                         value={editingItem.category} 
                         onChange={(e) => setEditingItem({...editingItem, category: e.target.value})}
-                        className="bg-zinc-900 border-zinc-800 focus-visible:ring-emerald-500" 
+                        className="bg-zinc-900 border-zinc-800 focus-visible:ring-[#2940bb]" 
                     />
                  </div>
                  <div className="grid gap-2">
@@ -412,7 +386,8 @@ export default function TransactionsPage() {
                  <Button type="button" variant="ghost" onClick={() => setIsEditOpen(false)} className="hover:bg-zinc-900 hover:text-white text-zinc-400">
                     Cancelar
                  </Button>
-                 <Button type="submit" className="bg-emerald-600 hover:bg-emerald-500 text-white">
+                 {/* MUDANÇA: Botão de salvar agora é AZUL */}
+                 <Button type="submit" className="bg-[#2940bb] hover:bg-[#2940bb]/90 text-white">
                     <Check className="w-4 h-4 mr-2" /> Salvar Alterações
                  </Button>
               </DialogFooter>

@@ -1,15 +1,22 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { FinanceProvider } from "@/lib/finance-context";
 import { AppSidebar } from "@/components/layout/app-sidebar";
-import { MobileNav } from "@/components/layout/mobile-nav";
 
-const inter = Inter({ subsets: ["latin"] });
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
 
 export const metadata: Metadata = {
   title: "Finance+",
-  description: "Dashboard Financeiro",
+  description: "Gestão Financeira Inteligente",
 };
 
 export default function RootLayout({
@@ -18,20 +25,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className="dark">
-      <body className={`${inter.className} bg-black text-white antialiased overflow-hidden`}>
+    <html lang="pt-BR" suppressHydrationWarning>
+      <body
+        // CORREÇÃO: Força o background dinâmico no corpo da página
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
+      >
         <FinanceProvider>
-          <div className="flex h-screen w-full flex-col xl:flex-row">
-            
-            <MobileNav />
-            
-            {/* Sidebar é um item flex, ela empurra o conteúdo naturalmente */}
+          <div className="flex min-h-screen w-full bg-background">
             <AppSidebar />
-            
-            {/* CORREÇÃO: Removi 'xl:pl-60'. Agora o conteúdo começa imediatamente após a sidebar. */}
-            <main className="flex-1 overflow-y-auto bg-black p-4 md:p-8 w-full">
-              {children}
-            </main>
+            <div className="flex-1 flex flex-col h-screen overflow-hidden bg-background">
+                <main className="flex-1 overflow-y-auto">
+                    {children}
+                </main>
+            </div>
           </div>
         </FinanceProvider>
       </body>
