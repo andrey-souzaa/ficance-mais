@@ -20,6 +20,9 @@ export interface Transaction {
   recurrence?: RecurrenceType;
   cardId?: string;
   accountId?: string;
+  // NOVOS CAMPOS PARA O FLUXO VISUAL (Inspirado no seu modelo)
+  fromAccount?: string;
+  toAccount?: string;
 }
 
 export interface Account {
@@ -95,10 +98,7 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isVisible, setIsVisible] = useState(true);
-  
-  // TEMA: Padrão Dark (Preto e Amarelo)
   const [theme, setTheme] = useState<ThemeType>("dark");
-  
   const [isMounted, setIsMounted] = useState(false);
   const [dateFilter, setDateFilter] = useState<DateFilterType>("mes");
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
@@ -120,7 +120,6 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         if (savedGoals) setGoals(JSON.parse(savedGoals));
         if (savedVisibility) setIsVisible(JSON.parse(savedVisibility));
         
-        // Forçar Tema Dark se não tiver nada salvo
         if (savedTheme) {
             setTheme(savedTheme);
             if (savedTheme === 'dark') document.documentElement.classList.add('dark');
@@ -129,7 +128,6 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
             setTheme("dark");
             document.documentElement.classList.add('dark');
         }
-
         setIsLoading(false);
       }
     };
@@ -149,7 +147,6 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
 
   const generateId = () => Math.random().toString(36).substr(2, 9);
 
-  // --- LÓGICA CRÍTICA DE SALDO ---
   const updateAccountBalance = (accountId: string, amount: number, operation: 'add' | 'subtract') => {
     setAccounts(prev => prev.map(acc => {
         if (acc.id === accountId) {
@@ -163,8 +160,6 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
   const addTransaction = (t: Omit<Transaction, "id">) => {
     const newTrans = { ...t, id: generateId() };
     setTransactions((prev) => [newTrans, ...prev]);
-    
-    // SÓ ATUALIZA SALDO SE FOR "PAID" (PAGO) E TIVER CONTA VINCULADA
     if (t.status === 'paid' && t.accountId) {
         updateAccountBalance(t.accountId, t.amount, t.type === 'income' ? 'add' : 'subtract');
     }
@@ -172,8 +167,8 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
 
   const deleteTransaction = (id: string) => {
     const t = transactions.find(t => t.id === id);
-    // SE APAGAR UMA TRANSAÇÃO PAGA, REVERTE O SALDO
     if (t && t.status === 'paid' && t.accountId) {
+        // Se for transferência, a exclusão manual é mais complexa, mas para transações simples:
         updateAccountBalance(t.accountId, t.amount, t.type === 'income' ? 'subtract' : 'add');
     }
     setTransactions((prev) => prev.filter(t => t.id !== id));
@@ -183,7 +178,6 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     const t = transactions.find(t => t.id === id);
     if (t && t.status === 'pending') {
         setTransactions((prev) => prev.map(tr => tr.id === id ? { ...tr, status: 'paid' } : tr));
-        // AO MARCAR COMO PAGO, ATUALIZA O SALDO
         if (t.accountId) {
             updateAccountBalance(t.accountId, t.amount, t.type === 'income' ? 'add' : 'subtract');
         }
@@ -204,12 +198,8 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         recurrence: 'variable', 
         cardId: undefined 
     };
-    
-    // Debita da conta
     updateAccountBalance(accountId, amount, 'subtract');
-    
     setTransactions(prev => {
-        // Marca as despesas do cartão como pagas
         const updatedTransactions = prev.map(t => {
             if (t.cardId === cardId && t.status === 'pending') {
                 return { ...t, status: 'paid' as TransactionStatus };
@@ -219,8 +209,6 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
         return [paymentTrans, ...updatedTransactions];
     });
   };
-
-  // --- FIM DA LÓGICA DE SALDO ---
 
   const addGoal = (goal: Omit<Goal, "id">) => setGoals(prev => [...prev, { ...goal, id: generateId() }]);
   const removeGoal = (id: string) => setGoals(prev => prev.filter(g => g.id !== id));
@@ -261,19 +249,38 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
   const editTransaction = (id: string, updated: Partial<Transaction>) => setTransactions((prev) => prev.map((t) => (t.id === id ? { ...t, ...updated } : t)));
   const addAccount = (acc: Omit<Account, "id">) => setAccounts((prev) => [...prev, { ...acc, id: generateId() }]);
   const removeAccount = (id: string) => setAccounts((prev) => prev.filter(acc => acc.id !== id));
-  
   const addCard = (card: Omit<Card, "id">) => setCards((prev) => [...prev, { ...card, id: generateId() }]);
   const editCard = (id: string, updated: Partial<Card>) => setCards((prev) => prev.map((c) => (c.id === id ? { ...c, ...updated } : c)));
   const removeCard = (id: string) => setCards((prev) => prev.filter(c => c.id !== id));
   
+  // --- MUDANÇA PRINCIPAL: LOGICA DE TRANSFERÊNCIA ATUALIZADA ---
   const addTransfer = (fromId: string, toId: string, amount: number, date: string) => {
+    const fromAcc = accounts.find(a => a.id === fromId);
+    const toAcc = accounts.find(a => a.id === toId);
+
+    if (!fromAcc || !toAcc) return;
+
+    // Atualiza os saldos reais
     updateAccountBalance(fromId, amount, 'subtract');
     updateAccountBalance(toId, amount, 'add');
-    const id1 = generateId();
-    const id2 = generateId();
+
+    // Cria UMA transação do tipo 'transfer' que vincula as duas contas
+    // Isso evita que apareça como Receita ou Despesa nos filtros globais
+    const transferId = generateId();
+    
     setTransactions((prev) => [
-      { id: id1, description: `Transf. Recebida`, amount: amount, type: 'income', category: 'Transferência', date: date, status: 'paid', accountId: toId },
-      { id: id2, description: `Transf. Enviada`, amount: amount, type: 'expense', category: 'Transferência', date: date, status: 'paid', accountId: fromId },
+      { 
+        id: transferId, 
+        description: `Transferência bancária`, 
+        amount: amount, 
+        type: 'transfer', // TIPO UNIFICADO
+        category: 'Transferência', 
+        date: date, 
+        status: 'paid', 
+        accountId: fromId, // Referência principal (quem enviou)
+        fromAccount: fromAcc.name, // Nome para o visual A -> B
+        toAccount: toAcc.name      // Nome para o visual A -> B
+      },
       ...prev
     ]);
   };

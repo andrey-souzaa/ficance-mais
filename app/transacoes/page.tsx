@@ -35,7 +35,7 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 
 export default function TransactionsPage() {
-  const { transactions, deleteTransaction, editTransaction } = useFinance();
+  const { transactions, deleteTransaction, editTransaction, isVisible } = useFinance();
   
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<"all" | "income" | "expense" | "transfer">("all");
@@ -62,6 +62,7 @@ export default function TransactionsPage() {
   );
 
   const formatMoney = (val: number) => {
+    if (!isVisible) return "••••";
     return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
   };
 
@@ -73,7 +74,7 @@ export default function TransactionsPage() {
     switch (type) {
       case "income": return { icon: ArrowUpCircle, color: "text-emerald-600 dark:text-emerald-500", bg: "bg-emerald-100 dark:bg-emerald-500/10" };
       case "expense": return { icon: ArrowDownCircle, color: "text-red-600 dark:text-red-500", bg: "bg-red-100 dark:bg-red-500/10" };
-      case "transfer": return { icon: ArrowRightCircle, color: "text-[#2940bb]", bg: "bg-blue-100 dark:bg-[#2940bb]/10" };
+      case "transfer": return { icon: ArrowRightLeft, color: "text-[#2940bb]", bg: "bg-blue-100 dark:bg-[#2940bb]/10" };
     }
   };
 
@@ -82,7 +83,6 @@ export default function TransactionsPage() {
   const handleSaveEdit = (e: React.FormEvent) => { e.preventDefault(); if (editingItem) { editTransaction(editingItem.id, editingItem); setIsEditOpen(false); setEditingItem(null); } };
 
   return (
-    // CORREÇÃO: Cores dinâmicas para o container principal
     <div className="space-y-6 w-full text-zinc-900 dark:text-zinc-100 max-w-[1600px] p-6 min-h-screen">
       
       {/* TOPO */}
@@ -146,7 +146,6 @@ export default function TransactionsPage() {
       </div>
 
       {/* FILTROS */}
-      {/* CORREÇÃO: Fundo e bordas adaptáveis */}
       <div className="bg-white dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 p-1.5 rounded-xl flex flex-col md:flex-row gap-2 shadow-sm">
         <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
@@ -158,13 +157,10 @@ export default function TransactionsPage() {
             />
         </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-hide">
+        <div className="flex gap-2">
             <Select value={typeFilter} onValueChange={(val: any) => setTypeFilter(val)}>
                 <SelectTrigger className="w-[110px] h-10 bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg text-xs focus:ring-0">
-                    <div className="flex items-center gap-2">
-                        <Filter className="h-3.5 w-3.5 text-zinc-500" />
-                        <SelectValue placeholder="Todos" />
-                    </div>
+                    <SelectValue placeholder="Todos" />
                 </SelectTrigger>
                 <SelectContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white">
                     <SelectItem value="all">Todos</SelectItem>
@@ -176,10 +172,7 @@ export default function TransactionsPage() {
 
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                 <SelectTrigger className="w-[140px] h-10 bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg text-xs focus:ring-0">
-                    <div className="flex items-center gap-2">
-                         <ListFilter className="h-3.5 w-3.5 text-zinc-500" />
-                         <SelectValue placeholder="Categorias" />
-                    </div>
+                     <SelectValue placeholder="Categorias" />
                 </SelectTrigger>
                 <SelectContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white">
                     <SelectItem value="all">Todas categorias</SelectItem>
@@ -188,138 +181,96 @@ export default function TransactionsPage() {
                     ))}
                 </SelectContent>
             </Select>
-
-            <Button variant="outline" className="h-10 bg-zinc-50 dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg text-xs font-normal gap-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:text-zinc-900 dark:hover:text-white shrink-0">
-                <CalendarIcon className="h-3.5 w-3.5 text-zinc-500" />
-                Período
-            </Button>
         </div>
       </div>
 
-      {/* CONTEÚDO (TABELA) */}
-      {/* CORREÇÃO: Fundo branco e bordas claras */}
+      {/* CONTEÚDO */}
       <div className="bg-white dark:bg-zinc-900/20 border border-zinc-200 dark:border-zinc-800 rounded-xl min-h-[400px] shadow-sm overflow-hidden">
-          
-          {/* MOBILE */}
-          <div className="flex flex-col md:hidden">
-            {sortedTransactions.length === 0 ? (
-                 <EmptyState />
-            ) : (
-                sortedTransactions.map((t) => {
-                const style = getTypeStyles(t.type);
-                const Icon = style.icon;
-                return (
-                    <div key={t.id} className="border-b border-zinc-100 dark:border-zinc-800/50 p-4 flex items-center justify-between active:bg-zinc-50 dark:active:bg-zinc-900/50 transition-colors last:border-0">
-                        <div className="flex items-center gap-3">
-                        <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 ${style.bg}`}>
-                            <Icon className={`h-5 w-5 ${style.color}`} />
-                        </div>
-                        <div className="flex flex-col">
-                            <p className="font-medium text-zinc-900 dark:text-white text-sm line-clamp-1">{t.description}</p>
-                            <div className="flex items-center gap-2 text-xs text-zinc-500 mt-0.5">
-                                <span>{formatDate(t.date)}</span>
-                                <span>•</span>
-                                <span className="capitalize">{t.category}</span>
-                            </div>
-                        </div>
-                        </div>
-                        <div className="flex flex-col items-end gap-1">
-                            <span className={`font-bold text-sm whitespace-nowrap ${style.color}`}>
-                                {t.type === 'expense' ? '-' : ''}{formatMoney(t.amount)}
-                            </span>
-                             <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-6 w-6 -mr-2 text-zinc-400 hover:text-zinc-900 dark:hover:text-white">
-                                        <MoreHorizontal className="h-4 w-4" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white">
-                                    <DropdownMenuItem onClick={() => handleEditClick(t)} className="gap-2 cursor-pointer text-xs">
-                                        <Pencil className="h-3.5 w-3.5" /> Editar
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleDelete(t.id)} className="gap-2 text-red-600 dark:text-red-500 cursor-pointer text-xs">
-                                        <Trash2 className="h-3.5 w-3.5" /> Excluir
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </div>
-                    </div>
-                );
-                })
-            )}
-          </div>
-
-          {/* DESKTOP */}
-          <div className="hidden md:block">
-            <Table>
-                <TableHeader className="bg-zinc-50 dark:bg-zinc-900/50">
-                    <TableRow className="border-zinc-200 dark:border-zinc-800 hover:bg-transparent">
-                        <TableHead className="text-zinc-500 font-medium h-12 w-[140px]">Data</TableHead>
-                        <TableHead className="text-zinc-500 font-medium h-12">Descrição</TableHead>
-                        <TableHead className="text-zinc-500 font-medium h-12">Categoria</TableHead>
-                        <TableHead className="text-zinc-500 font-medium h-12">Tipo</TableHead>
-                        <TableHead className="text-zinc-500 font-medium h-12 text-right">Valor</TableHead>
-                        <TableHead className="h-12 w-[50px]"></TableHead>
+          <Table>
+            <TableHeader className="bg-zinc-50 dark:bg-zinc-900/50">
+                <TableRow className="border-zinc-200 dark:border-zinc-800">
+                    <TableHead className="w-[120px]">Data</TableHead>
+                    <TableHead>Descrição / Fluxo</TableHead>
+                    <TableHead>Categoria</TableHead>
+                    <TableHead className="text-right">Valor</TableHead>
+                    <TableHead className="w-[50px]"></TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {sortedTransactions.length === 0 ? (
+                    <TableRow>
+                        <TableCell colSpan={5}>
+                            <EmptyState />
+                        </TableCell>
                     </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {sortedTransactions.length === 0 ? (
-                        <TableRow>
-                            <TableCell colSpan={6}>
-                                <EmptyState />
-                            </TableCell>
-                        </TableRow>
-                    ) : (
-                        sortedTransactions.map((t) => {
-                            const style = getTypeStyles(t.type);
-                            return (
-                                <TableRow key={t.id} className="border-zinc-100 dark:border-zinc-800/50 hover:bg-zinc-50 dark:hover:bg-zinc-900/30 group transition-colors">
-                                    <TableCell className="text-zinc-500 dark:text-zinc-400 font-medium text-xs">
-                                        {formatDate(t.date)}
-                                    </TableCell>
-                                    <TableCell className="text-zinc-900 dark:text-white font-medium text-sm">
-                                        {t.description}
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant="outline" className="bg-zinc-100 dark:bg-zinc-900/50 text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-800 font-normal">
-                                            {t.category}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center gap-2">
-                                            <div className={`h-1.5 w-1.5 rounded-full ${style.color.replace('text', 'bg')}`}></div>
-                                            <span className={`text-xs capitalize ${style.color}`}>
-                                                {t.type === 'income' ? 'Receita' : t.type === 'expense' ? 'Despesa' : 'Transf.'}
-                                            </span>
+                ) : (
+                    sortedTransactions.map((t) => {
+                        const style = getTypeStyles(t.type);
+                        const Icon = style.icon;
+                        
+                        return (
+                            <TableRow key={t.id} className="border-zinc-100 dark:border-zinc-800/50 hover:bg-zinc-50 dark:hover:bg-zinc-900/30 group transition-colors">
+                                <TableCell className="text-zinc-500 text-xs">
+                                    {formatDate(t.date)}
+                                </TableCell>
+                                <TableCell>
+                                    <div className="flex items-center gap-4">
+                                        {/* LÓGICA VISUAL DE TRANSFERÊNCIA (A -> B) */}
+                                        {t.type === 'transfer' ? (
+                                            <div className="flex items-center gap-2 py-1 px-3 bg-blue-50 dark:bg-[#2940bb]/10 border border-[#2940bb]/20 rounded-full shrink-0">
+                                                <div className="h-5 w-5 rounded-full bg-[#2940bb] flex items-center justify-center text-[8px] text-white font-bold">
+                                                    {t.fromAccount?.substring(0, 2).toUpperCase() || "OR"}
+                                                </div>
+                                                <ArrowRightLeft className="h-3 w-3 text-[#2940bb]" />
+                                                <div className="h-5 w-5 rounded-full bg-zinc-700 flex items-center justify-center text-[8px] text-white font-bold">
+                                                    {t.toAccount?.substring(0, 2).toUpperCase() || "DE"}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${style.bg}`}>
+                                                <Icon className={`h-4 w-4 ${style.color}`} />
+                                            </div>
+                                        )}
+                                        
+                                        <div>
+                                            <p className="font-medium text-sm text-zinc-900 dark:text-white">
+                                                {t.type === 'transfer' ? `${t.fromAccount} → ${t.toAccount}` : t.description}
+                                            </p>
+                                            {t.type === 'transfer' && <p className="text-[10px] text-zinc-500 uppercase tracking-tighter">Transferência Interna</p>}
                                         </div>
-                                    </TableCell>
-                                    <TableCell className={`text-right font-bold text-sm ${style.color}`}>
-                                        {t.type === 'expense' ? '-' : ''}{formatMoney(t.amount)}
-                                    </TableCell>
-                                    <TableCell>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 text-zinc-400 hover:text-zinc-900 dark:hover:text-white">
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white shadow-xl">
-                                                <DropdownMenuItem onClick={() => handleEditClick(t)} className="gap-2 cursor-pointer text-xs">
-                                                    <Pencil className="h-3.5 w-3.5" /> Editar
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => handleDelete(t.id)} className="gap-2 text-red-600 dark:text-red-500 cursor-pointer text-xs">
-                                                    <Trash2 className="h-3.5 w-3.5" /> Excluir
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </TableCell>
-                                </TableRow>
-                            );
-                        })
-                    )}
-                </TableBody>
-            </Table>
-          </div>
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    <Badge variant="outline" className="font-normal text-zinc-500 border-zinc-200 dark:border-zinc-800">
+                                        {t.type === 'transfer' ? 'Interno' : t.category}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell className={`text-right font-bold text-sm ${style.color}`}>
+                                    {t.type === 'expense' ? '-' : ''}{formatMoney(t.amount)}
+                                </TableCell>
+                                <TableCell>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <MoreHorizontal className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white shadow-xl">
+                                            <DropdownMenuItem onClick={() => handleEditClick(t)} className="gap-2 text-xs cursor-pointer">
+                                                <Pencil className="h-3.5 w-3.5" /> Editar
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleDelete(t.id)} className="gap-2 text-red-600 text-xs cursor-pointer">
+                                                <Trash2 className="h-3.5 w-3.5" /> Excluir
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </TableCell>
+                            </TableRow>
+                        );
+                    })
+                )}
+            </TableBody>
+          </Table>
       </div>
 
       {/* --- MODAL DE EDIÇÃO --- */}
@@ -362,32 +313,6 @@ export default function TransactionsPage() {
                     className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus-visible:ring-[#2940bb]" 
                     />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                 <div className="grid gap-2">
-                    <Label>Categoria</Label>
-                      <Input 
-                        value={editingItem.category} 
-                        onChange={(e) => setEditingItem({...editingItem, category: e.target.value})}
-                        className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus-visible:ring-[#2940bb]" 
-                    />
-                 </div>
-                 <div className="grid gap-2">
-                    <Label>Status</Label>
-                    <Select 
-                        value={editingItem.status} 
-                        onValueChange={(val: "paid" | "pending") => setEditingItem({...editingItem, status: val})}
-                    >
-                        <SelectTrigger className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white">
-                            <SelectItem value="paid">Pago / Recebido</SelectItem>
-                            <SelectItem value="pending">Pendente</SelectItem>
-                        </SelectContent>
-                    </Select>
-                 </div>
               </div>
 
               <DialogFooter className="mt-4">
