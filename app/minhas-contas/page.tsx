@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useFinance } from "@/lib/finance-context";
+import { useFinance, Account } from "@/lib/finance-context";
 import { 
   Plus, 
   Wallet, 
@@ -12,7 +12,8 @@ import {
   Landmark,
   Building2,
   Calendar,
-  MoreHorizontal
+  MoreHorizontal,
+  Check
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
@@ -20,7 +21,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
-// Gradientes para os cartões (Mantidos pois são identidade visual do cartão)
 const CARD_GRADIENTS = [
   "from-[#2940bb] to-blue-800",
   "from-purple-600 to-indigo-700",
@@ -30,16 +30,22 @@ const CARD_GRADIENTS = [
 ];
 
 export default function MyAccountsPage() {
-  const { accounts, cards, addAccount, addCard, removeAccount, removeCard, isVisible } = useFinance();
+  // ADICIONADO: transactions para poder calcular a fatura
+  const { accounts, cards, transactions, addAccount, editAccount, addCard, removeAccount, removeCard, isVisible } = useFinance();
   
-  // Estados dos Modais
+  // Estados dos Modais de Criação
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [isCardOpen, setIsCardOpen] = useState(false);
+
+  // Estados dos Modais de Edição
+  const [isEditAccountOpen, setIsEditAccountOpen] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
 
   // Estados dos Formulários
   const [newAccount, setNewAccount] = useState({ name: "", balance: "" });
   const [newCard, setNewCard] = useState({ name: "", limit: "", closingDate: "", dueDate: "" });
 
+  // --- FUNÇÕES DE CONTA ---
   const handleAddAccount = () => {
     if (!newAccount.name) return;
     addAccount({
@@ -51,6 +57,23 @@ export default function MyAccountsPage() {
     setIsAccountOpen(false);
   };
 
+  const openEditAccount = (acc: Account) => {
+      setEditingAccount(acc);
+      setIsEditAccountOpen(true);
+  };
+
+  const handleSaveAccountEdit = () => {
+      if (editingAccount && editingAccount.name) {
+          editAccount(editingAccount.id, {
+              name: editingAccount.name,
+              balance: Number(editingAccount.balance)
+          });
+          setIsEditAccountOpen(false);
+          setEditingAccount(null);
+      }
+  };
+
+  // --- FUNÇÕES DE CARTÃO ---
   const handleAddCard = () => {
     if (!newCard.name) return;
     addCard({
@@ -69,7 +92,6 @@ export default function MyAccountsPage() {
   };
 
   return (
-    // CORREÇÃO: Cores de texto dinâmicas para o container principal
     <div className="space-y-10 w-full text-zinc-900 dark:text-zinc-100 max-w-[1200px] mx-auto p-6 pb-20">
       
       {/* --- SEÇÃO 1: CONTAS BANCÁRIAS --- */}
@@ -80,7 +102,7 @@ export default function MyAccountsPage() {
                     <Landmark className="h-5 w-5 text-[#2940bb]" />
                     Contas Bancárias
                 </h2>
-                <p className="text-zinc-500 text-sm">Gerencie seus saldos</p>
+                <p className="text-zinc-500 dark:text-zinc-400 text-sm">Gerencie seus saldos</p>
             </div>
             
             <Dialog open={isAccountOpen} onOpenChange={setIsAccountOpen}>
@@ -98,7 +120,7 @@ export default function MyAccountsPage() {
                             <Label>Nome da Conta</Label>
                             <Input 
                                 placeholder="Ex: Nubank, Inter..." 
-                                className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus:ring-[#2940bb]/20 focus:border-[#2940bb]"
+                                className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus:ring-[#2940bb]/20 focus:border-[#2940bb]"
                                 value={newAccount.name}
                                 onChange={e => setNewAccount({...newAccount, name: e.target.value})}
                             />
@@ -108,7 +130,7 @@ export default function MyAccountsPage() {
                             <Input 
                                 type="number" 
                                 placeholder="R$ 0,00" 
-                                className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus:ring-[#2940bb]/20 focus:border-[#2940bb]"
+                                className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus:ring-[#2940bb]/20 focus:border-[#2940bb]"
                                 value={newAccount.balance}
                                 onChange={e => setNewAccount({...newAccount, balance: e.target.value})}
                             />
@@ -123,11 +145,9 @@ export default function MyAccountsPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {accounts.map((acc) => (
-                // CORREÇÃO: Cards brancos no light / escuros no dark
                 <div key={acc.id} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5 rounded-2xl flex items-center justify-between group hover:border-[#2940bb]/30 transition-all shadow-sm">
                     <div className="flex items-center gap-4">
                         <div className="h-12 w-12 rounded-full bg-zinc-100 dark:bg-black border border-zinc-200 dark:border-zinc-800 flex items-center justify-center">
-                             {/* Ícone dinâmico */}
                              {acc.name.toLowerCase().includes('nu') ? <span className="font-bold text-purple-600 dark:text-purple-500">Nu</span> : 
                               acc.name.toLowerCase().includes('inter') ? <span className="font-bold text-orange-600 dark:text-orange-500">In</span> : 
                               <Building2 className="h-6 w-6 text-zinc-400" />}
@@ -148,14 +168,17 @@ export default function MyAccountsPage() {
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
-                            <DropdownMenuItem className="gap-2 cursor-pointer text-xs"><Pencil className="h-3.5 w-3.5" /> Editar</DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => removeAccount(acc.id)} className="gap-2 text-red-500 cursor-pointer text-xs"><Trash2 className="h-3.5 w-3.5" /> Excluir</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openEditAccount(acc)} className="gap-2 cursor-pointer text-xs">
+                                <Pencil className="h-3.5 w-3.5" /> Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => removeAccount(acc.id)} className="gap-2 text-red-500 cursor-pointer text-xs">
+                                <Trash2 className="h-3.5 w-3.5" /> Excluir
+                            </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
             ))}
             
-            {/* Estado Vazio de Contas */}
             {accounts.length === 0 && (
                 <div 
                     onClick={() => setIsAccountOpen(true)}
@@ -178,13 +201,13 @@ export default function MyAccountsPage() {
                     <CreditCard className="h-5 w-5 text-[#2940bb]" />
                     Meus Cartões
                 </h2>
-                <p className="text-zinc-500 text-sm">Controle seus limites</p>
+                <p className="text-zinc-500 dark:text-zinc-400 text-sm">Controle seus limites</p>
             </div>
             
             <Dialog open={isCardOpen} onOpenChange={setIsCardOpen}>
                 <DialogTrigger asChild>
                     <Button className="bg-[#2940bb] hover:bg-[#2940bb]/90 text-white gap-2 font-medium">
-                        <Plus className="h-4 w-4" /> Nova Cartão
+                        <Plus className="h-4 w-4" /> Novo Cartão
                     </Button>
                 </DialogTrigger>
                 <DialogContent className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white">
@@ -220,10 +243,19 @@ export default function MyAccountsPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {cards.map((card, index) => {
+                
+                // --- CÁLCULO DA FATURA (ADICIONADO AQUI) ---
+                const currentInvoice = transactions
+                    .filter(t => t.cardId === card.id && t.type === 'expense' && t.status === 'pending')
+                    .reduce((acc, t) => acc + Number(t.amount), 0);
+
+                const limitPercentage = card.limit > 0 ? (currentInvoice / card.limit) * 100 : 0;
+                const availableLimit = card.limit - currentInvoice;
+
                 const gradient = CARD_GRADIENTS[index % CARD_GRADIENTS.length];
+                
                 return (
-                    // Cartões mantém o gradiente pois é a "identidade" do cartão, mas ajustei sombras
-                    <div key={card.id} className={`relative h-48 rounded-2xl p-6 flex flex-col justify-between shadow-lg overflow-hidden group bg-gradient-to-br ${gradient}`}>
+                    <div key={card.id} className={`relative h-56 rounded-2xl p-6 flex flex-col justify-between shadow-lg overflow-hidden group bg-gradient-to-br ${gradient}`}>
                         <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors"></div>
                         <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-white/10 blur-2xl"></div>
 
@@ -247,19 +279,30 @@ export default function MyAccountsPage() {
                             </DropdownMenu>
                         </div>
 
-                        <div className="relative z-10">
-                            <div className="flex gap-4 mb-1">
-                                <div className="h-8 w-10 bg-white/20 rounded border border-white/30 flex items-center justify-center">
-                                    <div className="h-4 w-6 border-2 border-white/40 rounded-sm"></div>
-                                </div>
-                                <div className="mt-1">
-                                    <p className="text-white/60 text-[10px] uppercase tracking-wider">Limite Total</p>
-                                    <p className="text-white font-bold text-xl drop-shadow-md">{formatMoney(card.limit)}</p>
-                                </div>
+                        {/* EXIBIÇÃO DE FATURA E LIMITE */}
+                        <div className="relative z-10 grid grid-cols-2 gap-4">
+                            <div>
+                                <p className="text-white/60 text-[10px] uppercase tracking-wider mb-0.5">Fatura Atual</p>
+                                <p className="text-white font-bold text-lg drop-shadow-md">{formatMoney(currentInvoice)}</p>
+                            </div>
+                            <div className="text-right">
+                                <p className="text-white/60 text-[10px] uppercase tracking-wider mb-0.5">Limite Livre</p>
+                                <p className="text-white font-medium text-base">{formatMoney(availableLimit)}</p>
                             </div>
                         </div>
 
-                        <div className="relative z-10 flex justify-between items-end">
+                        {/* BARRA DE PROGRESSO */}
+                        <div className="relative z-10">
+                             <div className="w-full h-1 bg-black/20 rounded-full overflow-hidden mb-1">
+                                <div className="h-full bg-white/80" style={{ width: `${Math.min(limitPercentage, 100)}%` }}></div>
+                             </div>
+                             <div className="flex justify-between text-[9px] text-white/50">
+                                <span>Uso: {limitPercentage.toFixed(0)}%</span>
+                                <span>Total: {formatMoney(card.limit)}</span>
+                             </div>
+                        </div>
+
+                        <div className="relative z-10 flex justify-between items-end mt-1">
                             <div className="text-xs text-white/80 font-mono">
                                 **** **** **** {Math.floor(1000 + Math.random() * 9000)}
                             </div>
@@ -273,11 +316,10 @@ export default function MyAccountsPage() {
                     </div>
                 )
             })}
-             {/* Estado Vazio de Cartões */}
              {cards.length === 0 && (
                 <div 
                     onClick={() => setIsCardOpen(true)}
-                    className="border border-dashed border-zinc-300 dark:border-zinc-800 h-48 rounded-2xl flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900/50 hover:border-[#2940bb]/50 transition-all text-zinc-500 hover:text-[#2940bb]"
+                    className="border border-dashed border-zinc-300 dark:border-zinc-800 h-56 rounded-2xl flex flex-col items-center justify-center gap-2 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900/50 hover:border-[#2940bb]/50 transition-all text-zinc-500 hover:text-[#2940bb]"
                 >
                     <CreditCard className="h-8 w-8 opacity-50" />
                     <span className="text-sm font-medium">Adicionar novo cartão</span>
@@ -285,6 +327,41 @@ export default function MyAccountsPage() {
             )}
         </div>
       </section>
+
+      {/* --- MODAL DE EDIÇÃO DE CONTA --- */}
+      <Dialog open={isEditAccountOpen} onOpenChange={setIsEditAccountOpen}>
+        <DialogContent className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white">
+            <DialogHeader>
+                <DialogTitle>Editar Conta Bancária</DialogTitle>
+            </DialogHeader>
+            {editingAccount && (
+                <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                        <Label>Nome da Conta</Label>
+                        <Input 
+                            value={editingAccount.name}
+                            onChange={e => setEditingAccount({...editingAccount, name: e.target.value})}
+                            className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus:ring-[#2940bb]/20 focus:border-[#2940bb]"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Saldo Atual</Label>
+                        <Input 
+                            type="number" 
+                            value={editingAccount.balance}
+                            onChange={e => setEditingAccount({...editingAccount, balance: Number(e.target.value)})}
+                            className="bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus:ring-[#2940bb]/20 focus:border-[#2940bb]"
+                        />
+                    </div>
+                </div>
+            )}
+            <DialogFooter>
+                <Button onClick={handleSaveAccountEdit} className="bg-[#2940bb] text-white hover:bg-[#2940bb]/90 w-full">
+                    <Check className="h-4 w-4 mr-2" /> Salvar Alterações
+                </Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
     </div>
   );

@@ -20,7 +20,6 @@ export interface Transaction {
   recurrence?: RecurrenceType;
   cardId?: string;
   accountId?: string;
-  // NOVOS CAMPOS PARA O FLUXO VISUAL (Inspirado no seu modelo)
   fromAccount?: string;
   toAccount?: string;
 }
@@ -63,6 +62,7 @@ interface FinanceContextType {
   editTransaction: (id: string, updatedTransaction: Partial<Transaction>) => void;
   
   addAccount: (account: Omit<Account, "id">) => void;
+  editAccount: (id: string, updatedAccount: Partial<Account>) => void; // ADICIONADO AQUI NA INTERFACE
   removeAccount: (id: string) => void;
   
   addCard: (card: Omit<Card, "id">) => void;
@@ -168,7 +168,6 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
   const deleteTransaction = (id: string) => {
     const t = transactions.find(t => t.id === id);
     if (t && t.status === 'paid' && t.accountId) {
-        // Se for transferência, a exclusão manual é mais complexa, mas para transações simples:
         updateAccountBalance(t.accountId, t.amount, t.type === 'income' ? 'subtract' : 'add');
     }
     setTransactions((prev) => prev.filter(t => t.id !== id));
@@ -182,6 +181,46 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
             updateAccountBalance(t.accountId, t.amount, t.type === 'income' ? 'add' : 'subtract');
         }
     }
+  };
+
+  const editTransaction = (id: string, updated: Partial<Transaction>) => setTransactions((prev) => prev.map((t) => (t.id === id ? { ...t, ...updated } : t)));
+  
+  const addAccount = (acc: Omit<Account, "id">) => setAccounts((prev) => [...prev, { ...acc, id: generateId() }]);
+  
+  // --- NOVA FUNÇÃO DE EDITAR CONTA ADICIONADA AQUI ---
+  const editAccount = (id: string, updated: Partial<Account>) => setAccounts((prev) => prev.map((acc) => (acc.id === id ? { ...acc, ...updated } : acc)));
+  
+  const removeAccount = (id: string) => setAccounts((prev) => prev.filter(acc => acc.id !== id));
+  const addCard = (card: Omit<Card, "id">) => setCards((prev) => [...prev, { ...card, id: generateId() }]);
+  const editCard = (id: string, updated: Partial<Card>) => setCards((prev) => prev.map((c) => (c.id === id ? { ...c, ...updated } : c)));
+  const removeCard = (id: string) => setCards((prev) => prev.filter(c => c.id !== id));
+  
+  const addTransfer = (fromId: string, toId: string, amount: number, date: string) => {
+    const fromAcc = accounts.find(a => a.id === fromId);
+    const toAcc = accounts.find(a => a.id === toId);
+
+    if (!fromAcc || !toAcc) return;
+
+    updateAccountBalance(fromId, amount, 'subtract');
+    updateAccountBalance(toId, amount, 'add');
+
+    const transferId = generateId();
+    
+    setTransactions((prev) => [
+      { 
+        id: transferId, 
+        description: `Transferência bancária`, 
+        amount: amount, 
+        type: 'transfer', 
+        category: 'Transferência', 
+        date: date, 
+        status: 'paid', 
+        accountId: fromId, 
+        fromAccount: fromAcc.name, 
+        toAccount: toAcc.name      
+      },
+      ...prev
+    ]);
   };
 
   const payCardInvoice = (cardId: string, accountId: string, amount: number, date: string) => {
@@ -246,45 +285,6 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
     })
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  const editTransaction = (id: string, updated: Partial<Transaction>) => setTransactions((prev) => prev.map((t) => (t.id === id ? { ...t, ...updated } : t)));
-  const addAccount = (acc: Omit<Account, "id">) => setAccounts((prev) => [...prev, { ...acc, id: generateId() }]);
-  const removeAccount = (id: string) => setAccounts((prev) => prev.filter(acc => acc.id !== id));
-  const addCard = (card: Omit<Card, "id">) => setCards((prev) => [...prev, { ...card, id: generateId() }]);
-  const editCard = (id: string, updated: Partial<Card>) => setCards((prev) => prev.map((c) => (c.id === id ? { ...c, ...updated } : c)));
-  const removeCard = (id: string) => setCards((prev) => prev.filter(c => c.id !== id));
-  
-  // --- MUDANÇA PRINCIPAL: LOGICA DE TRANSFERÊNCIA ATUALIZADA ---
-  const addTransfer = (fromId: string, toId: string, amount: number, date: string) => {
-    const fromAcc = accounts.find(a => a.id === fromId);
-    const toAcc = accounts.find(a => a.id === toId);
-
-    if (!fromAcc || !toAcc) return;
-
-    // Atualiza os saldos reais
-    updateAccountBalance(fromId, amount, 'subtract');
-    updateAccountBalance(toId, amount, 'add');
-
-    // Cria UMA transação do tipo 'transfer' que vincula as duas contas
-    // Isso evita que apareça como Receita ou Despesa nos filtros globais
-    const transferId = generateId();
-    
-    setTransactions((prev) => [
-      { 
-        id: transferId, 
-        description: `Transferência bancária`, 
-        amount: amount, 
-        type: 'transfer', // TIPO UNIFICADO
-        category: 'Transferência', 
-        date: date, 
-        status: 'paid', 
-        accountId: fromId, // Referência principal (quem enviou)
-        fromAccount: fromAcc.name, // Nome para o visual A -> B
-        toAccount: toAcc.name      // Nome para o visual A -> B
-      },
-      ...prev
-    ]);
-  };
-
   const toggleTheme = () => {
       const newTheme = theme === 'dark' ? 'light' : 'dark';
       setTheme(newTheme);
@@ -297,7 +297,8 @@ export function FinanceProvider({ children }: { children: React.ReactNode }) {
   if (!isMounted) return null;
 
   return (
-    <FinanceContext.Provider value={{ transactions, filteredTransactions, accounts, cards, goals, addTransaction, payTransaction, deleteTransaction, editTransaction, addAccount, removeAccount, addCard, editCard, removeCard, addTransfer, payCardInvoice, addGoal, removeGoal, addValueToGoal, isLoading, isVisible, toggleVisibility, theme, toggleTheme, dateFilter, setDateFilter, dateRange, setDateRange }}>
+    // ADICIONEI editAccount NO VALUE DO PROVIDER
+    <FinanceContext.Provider value={{ transactions, filteredTransactions, accounts, cards, goals, addTransaction, payTransaction, deleteTransaction, editTransaction, addAccount, editAccount, removeAccount, addCard, editCard, removeCard, addTransfer, payCardInvoice, addGoal, removeGoal, addValueToGoal, isLoading, isVisible, toggleVisibility, theme, toggleTheme, dateFilter, setDateFilter, dateRange, setDateRange }}>
       {children}
     </FinanceContext.Provider>
   );

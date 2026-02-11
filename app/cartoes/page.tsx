@@ -13,8 +13,9 @@ import {
   Banknote,
   Lock,
   Settings,
-  ArrowUpRight,
-  ArrowDownLeft
+  Unlock,
+  CheckCircle2,
+  AlertTriangle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
@@ -22,8 +23,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuLabel } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-// Gradientes exclusivos para os cartões
 const CARD_GRADIENTS = [
   "from-[#2940bb] to-blue-800",
   "from-purple-600 to-indigo-700",
@@ -33,16 +34,49 @@ const CARD_GRADIENTS = [
 ];
 
 export default function CardsPage() {
-  const { cards, addCard, removeCard, isVisible, transactions } = useFinance();
+  const { 
+    cards, 
+    accounts, 
+    addCard, 
+    removeCard, 
+    editCard, // Certifique-se de que editCard existe no context, ou adicione
+    transactions, 
+    editTransaction, // Necessário para marcar como pago
+    addTransaction, // Necessário para debitar da conta
+    isVisible 
+  } = useFinance();
   
-  // Estados
+  // --- ESTADOS ---
   const [isCardOpen, setIsCardOpen] = useState(false);
   const [newCard, setNewCard] = useState({ name: "", limit: "", closingDate: "", dueDate: "" });
   
-  // Estado para o Extrato (Qual cartão está selecionado)
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [isStatementOpen, setIsStatementOpen] = useState(false);
+  
+  // Estados para as novas funções
+  const [isPayInvoiceOpen, setIsPayInvoiceOpen] = useState(false);
+  const [isLimitOpen, setIsLimitOpen] = useState(false);
+  const [paymentAccount, setPaymentAccount] = useState("");
+  const [newLimitValue, setNewLimitValue] = useState("");
 
+  const selectedCardData = cards.find(c => c.id === selectedCardId);
+
+  // --- CÁLCULOS ---
+  const statementTransactions = transactions.filter(t => t.cardId === selectedCardId);
+  
+  // Fatura Atual: Apenas despesas pendentes
+  const invoiceTotal = statementTransactions
+    .filter(t => t.type === 'expense' && t.status === 'pending')
+    .reduce((acc, t) => acc + Number(t.amount), 0);
+
+  const formatMoney = (val: number) => {
+    if (!isVisible) return "••••";
+    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
+  };
+
+  // --- AÇÕES ---
+
+  // 1. Criar Cartão
   const handleAddCard = () => {
     if (!newCard.name) return;
     addCard({
@@ -55,22 +89,54 @@ export default function CardsPage() {
     setIsCardOpen(false);
   };
 
-  // Função para abrir o extrato
-  const openStatement = (cardId: string) => {
-      setSelectedCardId(cardId);
-      setIsStatementOpen(true);
+  // 2. Pagar Fatura
+  const handlePayInvoice = () => {
+    if (!selectedCardId || !paymentAccount || invoiceTotal <= 0) return;
+
+    // A. Cria a despesa na conta bancária (o dinheiro saindo)
+    addTransaction({
+        description: `Fatura ${selectedCardData?.name}`,
+        amount: invoiceTotal,
+        type: 'expense',
+        category: 'Dívidas e empréstimos',
+        accountId: paymentAccount,
+        date: new Date().toISOString(),
+        status: 'paid',
+        recurrence: 'variable'
+    });
+
+    // B. Marca todas as compras pendentes desse cartão como "Pagas"
+    const pendingItems = transactions.filter(t => t.cardId === selectedCardId && t.type === 'expense' && t.status === 'pending');
+    
+    pendingItems.forEach(t => {
+        editTransaction(t.id, { ...t, status: 'paid' });
+    });
+
+    setIsPayInvoiceOpen(false);
+    setIsStatementOpen(false); // Fecha o extrato também se estiver aberto
+    setPaymentAccount("");
+    alert("Fatura paga com sucesso!");
   };
 
-  // Filtrar transações do cartão selecionado (Simulação)
-  // Nota: No sistema real, você salvaria o cardId na transação. 
-  // Aqui vamos simular pegando algumas transações aleatórias se não houver filtro real.
-  const cardTransactions = transactions.filter(t => t.cardId === selectedCardId);
-  const selectedCardData = cards.find(c => c.id === selectedCardId);
+  // 3. Ajustar Limite
+  const handleUpdateLimit = () => {
+      if(selectedCardId && newLimitValue) {
+          // Verifica se a função editCard existe, senão avisa
+          if(editCard) {
+            editCard(selectedCardId, { limit: Number(newLimitValue) });
+            setIsLimitOpen(false);
+            setNewLimitValue("");
+          } else {
+            alert("Erro: Função de editar cartão não encontrada no contexto.");
+          }
+      }
+  }
 
-  const formatMoney = (val: number) => {
-    if (!isVisible) return "••••";
-    return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
-  };
+  // 4. Bloquear Cartão (Visual)
+  const handleToggleBlock = (cardId: string, currentStatus?: boolean) => {
+      // Simulação visual ou salvar no banco se tiver campo 'isBlocked'
+      alert(currentStatus ? "Cartão Desbloqueado!" : "Cartão Bloqueado Temporariamente.");
+  }
 
   return (
     <div className="w-full max-w-[1200px] mx-auto p-6 space-y-6 pb-20 text-zinc-900 dark:text-zinc-100">
@@ -98,25 +164,25 @@ export default function CardsPage() {
                     <div className="space-y-4 py-4">
                         <div className="space-y-2">
                             <Label>Apelido do Cartão</Label>
-                            <Input placeholder="Ex: Nubank Violeta" className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus:ring-[#2940bb]/20 focus:border-[#2940bb]" value={newCard.name} onChange={e => setNewCard({...newCard, name: e.target.value})} />
+                            <Input placeholder="Ex: Nubank Violeta" className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800" value={newCard.name} onChange={e => setNewCard({...newCard, name: e.target.value})} />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label>Dia Fechamento</Label>
-                                <Input type="number" placeholder="Dia" className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus:ring-[#2940bb]/20 focus:border-[#2940bb]" value={newCard.closingDate} onChange={e => setNewCard({...newCard, closingDate: e.target.value})} />
+                                <Input type="number" placeholder="Dia" className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800" value={newCard.closingDate} onChange={e => setNewCard({...newCard, closingDate: e.target.value})} />
                             </div>
                             <div className="space-y-2">
                                 <Label>Dia Vencimento</Label>
-                                <Input type="number" placeholder="Dia" className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus:ring-[#2940bb]/20 focus:border-[#2940bb]" value={newCard.dueDate} onChange={e => setNewCard({...newCard, dueDate: e.target.value})} />
+                                <Input type="number" placeholder="Dia" className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800" value={newCard.dueDate} onChange={e => setNewCard({...newCard, dueDate: e.target.value})} />
                             </div>
                         </div>
                         <div className="space-y-2">
                             <Label>Limite Total</Label>
-                            <Input type="number" placeholder="R$ 0,00" className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus:ring-[#2940bb]/20 focus:border-[#2940bb]" value={newCard.limit} onChange={e => setNewCard({...newCard, limit: e.target.value})} />
+                            <Input type="number" placeholder="R$ 0,00" className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800" value={newCard.limit} onChange={e => setNewCard({...newCard, limit: e.target.value})} />
                         </div>
                     </div>
                     <DialogFooter>
-                        <Button onClick={handleAddCard} className="bg-[#2940bb] text-white hover:bg-[#2940bb]/90 w-full">Salvar Cartão</Button>
+                        <Button onClick={handleAddCard} className="bg-[#2940bb] text-white w-full">Salvar Cartão</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
@@ -125,11 +191,17 @@ export default function CardsPage() {
         {/* Grid de Cartões */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {cards.map((card, index) => {
+                // Cálculo individual para o card
+                const currentInvoice = transactions
+                    .filter(t => t.cardId === card.id && t.type === 'expense' && t.status === 'pending')
+                    .reduce((acc, t) => acc + Number(t.amount), 0);
+
+                const limitPercentage = card.limit > 0 ? (currentInvoice / card.limit) * 100 : 0;
+                const availableLimit = card.limit - currentInvoice;
                 const gradient = CARD_GRADIENTS[index % CARD_GRADIENTS.length];
+
                 return (
                     <div key={card.id} className={`relative h-56 rounded-2xl p-6 flex flex-col justify-between shadow-lg overflow-hidden group bg-gradient-to-br ${gradient}`}>
-                        
-                        {/* Efeitos de fundo */}
                         <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-colors"></div>
                         <div className="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10 blur-3xl"></div>
 
@@ -155,18 +227,23 @@ export default function CardsPage() {
                                 <DropdownMenuContent align="end" className="w-48 bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800">
                                     <DropdownMenuLabel>Ações do Cartão</DropdownMenuLabel>
                                     <DropdownMenuSeparator />
-                                    <DropdownMenuItem onClick={() => openStatement(card.id)} className="gap-2 cursor-pointer">
+                                    
+                                    <DropdownMenuItem onClick={() => { setSelectedCardId(card.id); setIsStatementOpen(true); }} className="gap-2 cursor-pointer">
                                         <FileText className="h-4 w-4 text-[#2940bb]" /> Ver Extrato
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem className="gap-2 cursor-pointer">
+                                    
+                                    <DropdownMenuItem onClick={() => { setSelectedCardId(card.id); setIsPayInvoiceOpen(true); }} className="gap-2 cursor-pointer">
                                         <Banknote className="h-4 w-4 text-emerald-500" /> Pagar Fatura
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem className="gap-2 cursor-pointer">
+                                    
+                                    <DropdownMenuItem onClick={() => { setSelectedCardId(card.id); setNewLimitValue(String(card.limit)); setIsLimitOpen(true); }} className="gap-2 cursor-pointer">
                                         <Settings className="h-4 w-4 text-zinc-500" /> Ajustar Limite
                                     </DropdownMenuItem>
-                                    <DropdownMenuItem className="gap-2 cursor-pointer">
+                                    
+                                    <DropdownMenuItem onClick={() => handleToggleBlock(card.id)} className="gap-2 cursor-pointer">
                                         <Lock className="h-4 w-4 text-zinc-500" /> Bloquear
                                     </DropdownMenuItem>
+                                    
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem onClick={() => removeCard(card.id)} className="gap-2 text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-900/20 cursor-pointer">
                                         <Trash2 className="h-4 w-4" /> Excluir Cartão
@@ -179,7 +256,7 @@ export default function CardsPage() {
                         <div className="relative z-10 grid grid-cols-2 gap-4 mt-4">
                             <div>
                                 <p className="text-white/60 text-[10px] uppercase tracking-wider mb-0.5">Fatura Atual</p>
-                                <p className="text-white font-bold text-xl drop-shadow-sm">R$ 0,00</p>
+                                <p className="text-white font-bold text-xl drop-shadow-sm">{formatMoney(currentInvoice)}</p>
                             </div>
                             <div className="text-right">
                                 <p className="text-white/60 text-[10px] uppercase tracking-wider mb-0.5">Limite Total</p>
@@ -204,19 +281,85 @@ export default function CardsPage() {
              
              {/* Estado Vazio */}
              {cards.length === 0 && (
-                <div 
-                    onClick={() => setIsCardOpen(true)}
-                    className="border border-dashed border-zinc-300 dark:border-zinc-800 h-56 rounded-2xl flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900/50 hover:border-[#2940bb]/50 transition-all text-zinc-500 hover:text-[#2940bb]"
-                >
-                    <div className="h-12 w-12 rounded-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center">
-                        <Plus className="h-6 w-6" />
-                    </div>
+                <div onClick={() => setIsCardOpen(true)} className="border border-dashed border-zinc-300 dark:border-zinc-800 h-56 rounded-2xl flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-900/50 hover:border-[#2940bb]/50 transition-all text-zinc-500 hover:text-[#2940bb]">
+                    <div className="h-12 w-12 rounded-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center"><Plus className="h-6 w-6" /></div>
                     <span className="font-medium">Cadastrar novo cartão</span>
                 </div>
             )}
         </div>
 
-        {/* MODAL DE EXTRATO DO CARTÃO */}
+        {/* --- MODAL DE PAGAR FATURA --- */}
+        <Dialog open={isPayInvoiceOpen} onOpenChange={setIsPayInvoiceOpen}>
+            <DialogContent className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2"><Banknote className="h-5 w-5 text-emerald-500" /> Pagar Fatura</DialogTitle>
+                    <DialogDescription>O valor será debitado da conta selecionada e o limite liberado.</DialogDescription>
+                </DialogHeader>
+                
+                {selectedCardData && (
+                    <div className="py-4 space-y-4">
+                        <div className="p-4 bg-zinc-50 dark:bg-zinc-900 rounded-lg border border-zinc-200 dark:border-zinc-800 flex justify-between items-center">
+                            <span className="text-sm text-zinc-500">Valor Total da Fatura</span>
+                            <span className="text-xl font-bold text-zinc-900 dark:text-white">{formatMoney(invoiceTotal)}</span>
+                        </div>
+
+                        {invoiceTotal === 0 ? (
+                            <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-lg text-sm">
+                                <CheckCircle2 className="h-4 w-4" /> Fatura zerada! Nada a pagar.
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                <Label>Pagar com qual conta?</Label>
+                                <Select value={paymentAccount} onValueChange={setPaymentAccount}>
+                                    <SelectTrigger className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+                                        <SelectValue placeholder="Selecione uma conta" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+                                        {accounts.map(acc => (
+                                            <SelectItem key={acc.id} value={acc.id}>{acc.name} (Saldo: {formatMoney(acc.balance)})</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsPayInvoiceOpen(false)}>Cancelar</Button>
+                    <Button 
+                        onClick={handlePayInvoice} 
+                        disabled={invoiceTotal === 0 || !paymentAccount}
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                    >
+                        Confirmar Pagamento
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
+        {/* --- MODAL DE AJUSTAR LIMITE --- */}
+        <Dialog open={isLimitOpen} onOpenChange={setIsLimitOpen}>
+            <DialogContent className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white">
+                <DialogHeader>
+                    <DialogTitle>Ajustar Limite</DialogTitle>
+                </DialogHeader>
+                <div className="py-4 space-y-2">
+                    <Label>Novo Limite Total</Label>
+                    <Input 
+                        type="number" 
+                        value={newLimitValue} 
+                        onChange={(e) => setNewLimitValue(e.target.value)}
+                        className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
+                    />
+                </div>
+                <DialogFooter>
+                    <Button onClick={handleUpdateLimit} className="bg-[#2940bb] text-white">Salvar</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
+        {/* --- MODAL DE EXTRATO DO CARTÃO --- */}
         <Dialog open={isStatementOpen} onOpenChange={setIsStatementOpen}>
             <DialogContent className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white max-w-2xl">
                 <DialogHeader>
@@ -224,22 +367,24 @@ export default function CardsPage() {
                         <FileText className="h-5 w-5 text-[#2940bb]" /> 
                         Extrato: {selectedCardData?.name}
                     </DialogTitle>
-                    <DialogDescription>
-                        Fatura atual e histórico de lançamentos.
-                    </DialogDescription>
+                    <DialogDescription>Fatura atual e histórico de lançamentos.</DialogDescription>
                 </DialogHeader>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-4">
                     <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
                         <p className="text-xs text-zinc-500 uppercase">Fatura Atual</p>
-                        <p className="text-2xl font-bold text-[#2940bb] mt-1">R$ 0,00</p>
-                        <Button size="sm" className="w-full mt-3 bg-[#2940bb] hover:bg-[#2940bb]/90 text-white">
+                        <p className="text-2xl font-bold text-[#2940bb] mt-1">{formatMoney(invoiceTotal)}</p>
+                        <Button 
+                            size="sm" 
+                            className="w-full mt-3 bg-[#2940bb] hover:bg-[#2940bb]/90 text-white"
+                            onClick={() => { setIsStatementOpen(false); setIsPayInvoiceOpen(true); }}
+                        >
                             Pagar Fatura
                         </Button>
                     </div>
                     <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
                         <p className="text-xs text-zinc-500 uppercase">Limite Disponível</p>
-                        <p className="text-xl font-bold text-emerald-600 dark:text-emerald-500 mt-1">{formatMoney(selectedCardData?.limit || 0)}</p>
+                        <p className="text-xl font-bold text-emerald-600 dark:text-emerald-500 mt-1">{formatMoney((selectedCardData?.limit || 0) - invoiceTotal)}</p>
                     </div>
                     <div className="p-4 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
                         <p className="text-xs text-zinc-500 uppercase">Status</p>
@@ -253,23 +398,23 @@ export default function CardsPage() {
                 <div className="space-y-3 mt-2">
                     <h3 className="text-sm font-bold text-zinc-500 uppercase tracking-wide">Lançamentos Recentes</h3>
                     <ScrollArea className="h-[200px] pr-4">
-                        {cardTransactions.length === 0 ? (
+                        {statementTransactions.length === 0 ? (
                             <div className="text-center py-8 text-zinc-400 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-lg">
                                 Nenhuma compra registrada nesta fatura.
                             </div>
                         ) : (
-                            cardTransactions.map(t => (
+                            statementTransactions.map(t => (
                                 <div key={t.id} className="flex items-center justify-between p-3 border-b border-zinc-100 dark:border-zinc-800 last:border-0">
                                     <div className="flex items-center gap-3">
                                         <div className="h-8 w-8 rounded-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center text-zinc-500">
-                                            <Wallet className="h-4 w-4" />
+                                            {t.type === 'expense' ? <Wallet className="h-4 w-4" /> : <Banknote className="h-4 w-4 text-emerald-500" />}
                                         </div>
                                         <div>
                                             <p className="text-sm font-medium">{t.description}</p>
-                                            <p className="text-xs text-zinc-500">{new Date(t.date).toLocaleDateString()}</p>
+                                            <p className="text-xs text-zinc-500">{new Date(t.date).toLocaleDateString()} • {t.status === 'paid' ? 'Pago' : 'Pendente'}</p>
                                         </div>
                                     </div>
-                                    <span className="font-bold text-sm text-zinc-900 dark:text-white">
+                                    <span className={`font-bold text-sm ${t.status === 'paid' ? 'text-zinc-400 line-through' : 'text-zinc-900 dark:text-white'}`}>
                                         {formatMoney(t.amount)}
                                     </span>
                                 </div>

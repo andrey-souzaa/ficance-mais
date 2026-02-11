@@ -6,7 +6,7 @@ import { addDays, isAfter, isBefore } from "date-fns";
 import { 
   ArrowDownCircle, TrendingUp, TrendingDown, Scale, 
   Plus, Minus, Eye, EyeOff, Calendar, Landmark,
-  Sun, Moon, Wallet, ArrowUpCircle, Clock, CreditCard // Adicionei Clock e outros ícones necessários
+  Sun, Moon, Wallet, ArrowUpCircle, Clock, CreditCard // Adicionados ícones novos
 } from "lucide-react";
 
 // DND Kit Imports
@@ -51,7 +51,7 @@ function SortableItem({ id, children, className }: { id: string, children: React
   );
 }
 
-export default function Home() {
+export default function DashboardPage() {
   const { 
     filteredTransactions, transactions, accounts, 
     isVisible, toggleVisibility, 
@@ -125,29 +125,30 @@ export default function Home() {
   const handleFilterChange = (val: DateFilterType) => val === "custom" ? setIsCustomDateOpen(true) : setDateFilter(val);
   const formatMoney = (val: number) => !isVisible ? "••••" : new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
 
-  // --- CÁLCULOS FINANCEIROS ATUALIZADOS ---
+  // --- CÁLCULOS FINANCEIROS (COM PREVISÃO) ---
   
-  // 1. Saldo Real (Soma das Contas)
+  // 1. Saldo Real (Contas)
   const totalAccountBalance = accounts.reduce((acc, account) => acc + Number(account.balance), 0);
   
-  // 2. Receita/Despesa (Baseado no filtro de data selecionado, para os gráficos)
+  // 2. Receitas e Despesas do Filtro (Para os gráficos)
   const income = filteredTransactions.filter(t => t.type === 'income').reduce((acc, t) => acc + Number(t.amount), 0);
   const expense = filteredTransactions.filter(t => t.type === 'expense' && !t.cardId).reduce((acc, t) => acc + Number(t.amount), 0);
-  
-  // 3. PENDÊNCIAS (Para o card "A Sair" e "Previsão")
-  // Pegamos TUDO que está pendente, independente da data, pois impacta o futuro.
+
+  // 3. Cálculos de Pendências (Geral) para Previsão
+  // Pega tudo que é 'expense' e está 'pending' (contas a pagar)
   const pendingExpenses = transactions
     .filter(t => t.status === 'pending' && t.type === 'expense')
     .reduce((acc, t) => acc + Number(t.amount), 0);
 
+  // Pega tudo que é 'income' e está 'pending' (a receber)
   const pendingIncomes = transactions
     .filter(t => t.status === 'pending' && t.type === 'income')
     .reduce((acc, t) => acc + Number(t.amount), 0);
-  
+
   // 4. Previsão: Saldo Atual + A Receber - A Pagar
   const forecastBalance = totalAccountBalance + pendingIncomes - pendingExpenses;
 
-  // 5. Últimas Transações
+  // 5. Transações Recentes
   const recentTransactions = filteredTransactions.filter(t => !t.cardId).slice(0, 5);
 
   const renderWidget = (id: string) => {
@@ -174,98 +175,109 @@ export default function Home() {
   if (!isMounted) return null;
 
   return (
-    <main className="space-y-8 w-full text-zinc-900 dark:text-zinc-100 bg-zinc-50 dark:bg-black min-h-screen px-4 pb-20 pt-10 md:px-8 md:pt-12 transition-colors duration-300">
+    <div className="space-y-8 w-full text-zinc-900 dark:text-zinc-100 bg-zinc-50 dark:bg-black min-h-screen px-4 pb-20 pt-6 md:px-8 md:pt-8 transition-colors duration-300">
       
       {/* HEADER PRINCIPAL */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end py-2 border-b border-zinc-200 dark:border-zinc-800 gap-4 w-full">
-        <div className="flex flex-wrap justify-start items-start gap-8 w-full md:w-auto">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center py-2 gap-4 w-full">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">Dashboard</h1>
+          <p className="text-zinc-500 dark:text-zinc-400 text-sm">Visão geral das suas finanças.</p>
+        </div>
+        
+        {/* CONTROLES */}
+        <div className="flex flex-wrap items-center gap-2">
+             <Select value={dateFilter} onValueChange={(val) => handleFilterChange(val as DateFilterType)}>
+                <SelectTrigger className="h-9 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 min-w-[120px] text-xs gap-2 focus:ring-0 rounded-md">
+                    <Calendar className="h-3 w-3 text-zinc-500" />
+                    <SelectValue placeholder="Período" />
+                </SelectTrigger>
+                <SelectContent className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white">
+                    <SelectItem value="hoje">Hoje</SelectItem><SelectItem value="semana">Semana</SelectItem><SelectItem value="mes">Mês</SelectItem><SelectItem value="tudo">Tudo</SelectItem>
+                    <div className="h-px bg-zinc-200 dark:bg-zinc-800 my-1"></div>
+                    <SelectItem value="custom" className="text-[#2940bb] font-medium">Personalizado...</SelectItem>
+                </SelectContent>
+            </Select>
+            <CustomDateDialog open={isCustomDateOpen} onOpenChange={setIsCustomDateOpen} />
+
+            <div className="h-6 w-px bg-zinc-200 dark:bg-zinc-800 mx-1"></div>
             
-            {/* CARD 1: SALDO EM CONTAS (COM AVISO DE SAÍDA) */}
-            <div className="flex flex-col items-start gap-1 text-left min-w-[140px]">
-                <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
-                    <Landmark className="h-3.5 w-3.5 text-zinc-500" /> Saldo em Contas
-                </span>
-                <span className="text-2xl md:text-3xl font-bold text-zinc-900 dark:text-white tracking-tight text-left">
+            <Button variant="outline" size="icon" onClick={toggleVisibility} className="h-9 w-9 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+                {isVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+            </Button>
+            <Button variant="outline" size="icon" onClick={toggleTheme} className="h-9 w-9 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
+                {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+            </Button>
+
+            <CustomizeDashboardDialog items={items} hiddenItems={hiddenWidgets} onUpdate={handleLayoutUpdate} />
+        </div>
+      </div>
+
+      {/* KPIS PRINCIPAIS - COM A LÓGICA NOVA DE PENDÊNCIAS */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        {/* CARD 1: SALDO TOTAL (Com aviso de saída) */}
+        <Card className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 shadow-sm relative overflow-hidden">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-zinc-500">Saldo Total</CardTitle>
+                <Wallet className="h-4 w-4 text-[#2940bb]" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold text-zinc-900 dark:text-white">
                     {formatMoney(totalAccountBalance)}
-                </span>
-                
-                {/* --- AVISO DE VALOR A SAIR --- */}
+                </div>
+                {/* AQUI ESTÁ A LÓGICA DO VALOR A LIBERAR/SAIR */}
                 {pendingExpenses > 0 && (
-                    <div className="flex items-center gap-1.5 mt-1 bg-zinc-100 dark:bg-zinc-900 px-2 py-1 rounded text-[10px] font-medium text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-800">
-                        <Clock className="h-3 w-3" />
-                        <span>A sair: <span className="text-red-500 font-bold">- {formatMoney(pendingExpenses)}</span></span>
+                    <div className="flex items-center gap-1.5 mt-2 text-xs text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-900/50 p-1.5 rounded-md w-fit border border-zinc-100 dark:border-zinc-800">
+                        <Clock className="h-3 w-3 text-zinc-400" />
+                        <span>A sair: <span className="text-red-500 font-medium">- {formatMoney(pendingExpenses)}</span></span>
                     </div>
                 )}
-            </div>
+            </CardContent>
+        </Card>
 
-            <div className="hidden md:block w-px h-10 bg-zinc-200 dark:bg-zinc-800 mt-1"></div>
-            
-            {/* CARD 2: FATURAMENTO (Do período) */}
-            <div className="flex flex-col items-start gap-1 text-left min-w-[140px]">
-                <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
-                    <TrendingUp className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-500" /> Faturamento
-                </span>
-                <span className="text-2xl md:text-3xl font-bold text-emerald-600 dark:text-emerald-500 tracking-tight text-left">
-                    {formatMoney(income)}
-                </span>
-                {pendingIncomes > 0 && (
-                     <span className="text-[10px] text-zinc-400">+ {formatMoney(pendingIncomes)} a receber</span>
-                )}
-            </div>
+        {/* CARD 2: FATURAMENTO/RECEITAS */}
+        <Card className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-zinc-500">Receitas (Mês)</CardTitle>
+                <ArrowUpCircle className="h-4 w-4 text-emerald-500" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-500">{formatMoney(income)}</div>
+                <p className="text-xs text-zinc-500 mt-1">
+                    {pendingIncomes > 0 ? `+ ${formatMoney(pendingIncomes)} a receber` : "Total recebido no período"}
+                </p>
+            </CardContent>
+        </Card>
 
-            {/* CARD 3: DESPESAS (Do período) */}
-            <div className="flex flex-col items-start gap-1 text-left min-w-[140px]">
-                <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
-                    <TrendingDown className="h-3.5 w-3.5 text-red-600 dark:text-red-500" /> Despesas
-                </span>
-                <span className="text-2xl md:text-3xl font-bold text-red-600 dark:text-red-500 tracking-tight text-left">
-                    {formatMoney(expense)}
-                </span>
-            </div>
+        {/* CARD 3: DESPESAS */}
+        <Card className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-zinc-500">Despesas (Mês)</CardTitle>
+                <ArrowDownCircle className="h-4 w-4 text-red-500" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold text-red-600 dark:text-red-500">{formatMoney(expense)}</div>
+                <p className="text-xs text-zinc-500 mt-1">
+                    Total pago no período
+                </p>
+            </CardContent>
+        </Card>
 
-            <div className="hidden md:block w-px h-10 bg-zinc-200 dark:bg-zinc-800 mt-1"></div>
-             
-            {/* CARD 4: PREVISÃO (Cálculo Atualizado) */}
-            <div className="flex flex-col items-start gap-1 text-left min-w-[140px]">
-                <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
-                    <Calendar className="h-3.5 w-3.5 text-[#2940bb]" /> Previsão
-                </span>
-                <span className={`text-2xl md:text-3xl font-bold tracking-tight text-left ${forecastBalance >= 0 ? "text-[#2940bb]" : "text-orange-500"}`}>
+        {/* CARD 4: PREVISÃO (Lógica atualizada) */}
+        <Card className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-zinc-500">Previsão de Saldo</CardTitle>
+                <TrendingUp className="h-4 w-4 text-[#2940bb]" />
+            </CardHeader>
+            <CardContent>
+                <div className={`text-2xl font-bold ${forecastBalance >= 0 ? 'text-[#2940bb]' : 'text-red-600'}`}>
                     {formatMoney(forecastBalance)}
-                </span>
-                <span className="text-[10px] text-zinc-400">Após quitar pendências</span>
-            </div>
-        </div>
-
-        {/* CONTROLES */}
-        <div className="w-full md:w-auto flex justify-start md:justify-end pb-2 md:pb-0">
-            <div className="flex items-center gap-2">
-                <Select value={dateFilter} onValueChange={(val) => handleFilterChange(val as DateFilterType)}>
-                    <SelectTrigger className="h-8 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 min-w-[120px] text-xs gap-2 focus:ring-0 rounded-md">
-                        <Calendar className="h-3 w-3 text-zinc-500" />
-                        <SelectValue placeholder="Período" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-white">
-                        <SelectItem value="hoje">Hoje</SelectItem><SelectItem value="semana">Semana</SelectItem><SelectItem value="mes">Mês</SelectItem><SelectItem value="tudo">Tudo</SelectItem>
-                        <div className="h-px bg-zinc-200 dark:bg-zinc-800 my-1"></div>
-                        <SelectItem value="custom" className="text-[#2940bb] font-medium">Personalizado...</SelectItem>
-                    </SelectContent>
-                </Select>
-                <CustomDateDialog open={isCustomDateOpen} onOpenChange={setIsCustomDateOpen} />
-                
-                <div className="h-4 w-px bg-zinc-200 dark:bg-zinc-800 mx-1"></div>
-                
-                <Button variant="ghost" size="icon" onClick={toggleVisibility} className="text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-md h-8 w-8">
-                    {isVisible ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-                </Button>
-
-                <Button variant="ghost" size="icon" onClick={toggleTheme} className="text-zinc-500 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-200 dark:hover:bg-zinc-800 rounded-md h-8 w-8">
-                    {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                </Button>
-
-                <CustomizeDashboardDialog items={items} hiddenItems={hiddenWidgets} onUpdate={handleLayoutUpdate} />
-            </div>
-        </div>
+                </div>
+                <p className="text-xs text-zinc-500 mt-1">
+                    Após quitar pendências
+                </p>
+            </CardContent>
+        </Card>
       </div>
 
       {/* ATALHOS RÁPIDOS */}
@@ -287,7 +299,7 @@ export default function Home() {
 
       <MiddleWidgets />
 
-      {/* GRID DE WIDGETS COM SORTABLE */}
+      {/* GRID DE WIDGETS COM DRAG AND DROP */}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={visibleItems} strategy={rectSortingStrategy}>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-[minmax(240px,auto)] pb-10">
@@ -297,7 +309,7 @@ export default function Home() {
                 </SortableItem>
             ))}
             
-            {/* ÚLTIMAS TRANSAÇÕES (Fixo no final) */}
+            {/* ÚLTIMAS TRANSAÇÕES (Fixo) */}
             <div className="col-span-1 md:col-span-2 lg:col-span-3">
                   <Card className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 shadow-sm">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -346,6 +358,6 @@ export default function Home() {
           </div>
         </SortableContext>
       </DndContext>
-    </main>
+    </div>
   );
 }

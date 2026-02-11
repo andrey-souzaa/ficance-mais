@@ -45,17 +45,17 @@ export function MiddleWidgets() {
   const isPositive = forecast >= 0;
 
   return (
-    // AJUSTE: gap-6 para melhor separação visual
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
-        {/* WIDGET 1: A VENCER */}
-        {/* AJUSTE: h-full para forçar altura igual */}
-        <Card className="h-full bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 relative overflow-hidden group hover:border-orange-500/30 transition-all shadow-sm">
-            <div className="absolute top-0 left-0 w-1 h-full bg-orange-500"></div>
+        {/* WIDGET 1: A VENCER (Agora AZUL) */}
+        <Card className="h-full bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 relative overflow-hidden group hover:border-[#2940bb]/30 transition-all shadow-sm">
+            {/* Barra lateral azul */}
+            <div className="absolute top-0 left-0 w-1 h-full bg-[#2940bb]"></div>
             
             <CardContent className="p-6 flex items-center justify-between h-full">
                 <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-full bg-orange-100 dark:bg-orange-500/10 flex items-center justify-center text-orange-600 dark:text-orange-500 shrink-0">
+                    {/* Ícone azul */}
+                    <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center text-[#2940bb] shrink-0">
                         <Calendar className="h-6 w-6" />
                     </div>
                     
@@ -69,7 +69,7 @@ export function MiddleWidgets() {
                     </div>
                 </div>
 
-                <div className={`px-3 py-1.5 rounded-full text-xs font-bold border ${upcomingCount > 0 ? 'bg-orange-100 dark:bg-orange-500/10 text-orange-600 dark:text-orange-500 border-orange-200 dark:border-orange-500/20' : 'bg-zinc-100 dark:bg-zinc-900 text-zinc-500 border-zinc-200 dark:border-zinc-800'}`}>
+                <div className={`px-3 py-1.5 rounded-full text-xs font-bold border ${upcomingCount > 0 ? 'bg-blue-50 dark:bg-blue-900/20 text-[#2940bb] border-blue-100 dark:border-blue-900/30' : 'bg-zinc-100 dark:bg-zinc-900 text-zinc-500 border-zinc-200 dark:border-zinc-800'}`}>
                     {upcomingCount === 0 ? (
                         <span className="flex items-center gap-1">0 <span className="hidden sm:inline">contas</span></span>
                     ) : (
@@ -79,21 +79,23 @@ export function MiddleWidgets() {
             </CardContent>
         </Card>
 
-        {/* WIDGET 2: PREVISÃO */}
-        {/* AJUSTE: h-full para forçar altura igual */}
+        {/* WIDGET 2: PREVISÃO (Agora Preto/Neutro e barra Azul) */}
         <Card className="h-full bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800 relative overflow-hidden hover:border-[#2940bb]/30 transition-all shadow-sm">
-            <div className={`absolute top-0 left-0 w-1 h-full ${isPositive ? 'bg-[#2940bb]' : 'bg-red-500'}`}></div>
+            {/* Barra lateral sempre azul ou neutra, sem vermelho */}
+            <div className="absolute top-0 left-0 w-1 h-full bg-[#2940bb]"></div>
             
             <CardContent className="p-6 flex items-center justify-between h-full">
                 <div className="flex items-center gap-4">
-                    <div className={`h-12 w-12 rounded-full flex items-center justify-center shrink-0 ${isPositive ? 'bg-blue-100 dark:bg-blue-500/10 text-[#2940bb] dark:text-blue-500' : 'bg-red-100 dark:bg-red-500/10 text-red-600 dark:text-red-500'}`}>
+                    {/* Ícone sempre azul */}
+                    <div className="h-12 w-12 rounded-full flex items-center justify-center shrink-0 bg-blue-100 dark:bg-blue-900/20 text-[#2940bb]">
                         <TrendingUp className="h-6 w-6" />
                     </div>
                     
                     <div>
                         <p className="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-1">Previsão (30d)</p>
                         <div className="flex items-baseline gap-2">
-                             <span className={`text-2xl font-bold ${isPositive ? 'text-zinc-900 dark:text-white' : 'text-red-600 dark:text-red-400'}`}>
+                             {/* Texto sempre preto/branco */}
+                             <span className="text-2xl font-bold text-zinc-900 dark:text-white">
                                 {formatMoney(forecast)}
                              </span>
                         </div>
